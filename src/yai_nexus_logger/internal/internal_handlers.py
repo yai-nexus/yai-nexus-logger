@@ -67,13 +67,13 @@ class SLSLogHandler(logging.Handler):
         super().__init__()
         if not SLS_SDK_AVAILABLE:
             raise ImportError("SLS dependencies are not installed.")
-        
+
         self.project = project
         self.logstore = logstore
         self.topic = topic
         # 如果 source 未提供，尝试获取本机IP作为来源
         self.source = source if source else self._get_source_ip()
-        
+
         self.client = LogClient(endpoint, access_key_id, access_key_secret)
 
     def _get_source_ip(self) -> str:
@@ -88,9 +88,27 @@ class SLSLogHandler(logging.Handler):
         格式化并发送日志记录。
         """
         try:
-            log_item = LogItem(
-                timestamp=int(record.created),
-                contents=[("message", self.format(record))]
+            # 格式化消息
+            msg = self.format(record)
+
+            # 获取trace_id（如果存在）
+            trace_id = getattr(record, "trace_id", "")
+
+            # 创建日志项
+            log_item = LogItem()
+            log_item.set_time(int(record.created))
+            log_item.set_contents(
+                [
+                    ("message", msg),
+                    ("level", record.levelname),
+                    ("logger", record.name),
+                    ("module", record.module),
+                    ("function", record.funcName),
+                    ("line", str(record.lineno)),
+                    ("process_id", str(record.process)),
+                    ("thread_id", str(record.thread)),
+                    ("trace_id", trace_id),
+                ]
             )
             request = PutLogsRequest(
                 project=self.project,
@@ -102,7 +120,7 @@ class SLSLogHandler(logging.Handler):
             self.client.put_logs(request)
         except Exception:
             self.handleError(record)
-            
+
     def close(self):
         """
         关闭 handler，这是一个空操作，因为 LogClient 不需要显式关闭。
@@ -142,7 +160,7 @@ def get_sls_handler(
         source=source,
     )
     handler.setFormatter(formatter)
-    
+
     _sls_handler_instance = handler
     return handler
 
