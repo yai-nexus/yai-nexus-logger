@@ -1,0 +1,33 @@
+[project]
+name = "yai-nexus-logger"
+version = "0.0.1"
+authors = [
+  { name="Nero Claudius", email="your-email@example.com" },
+]
+description = "A powerful, structured logger for modern Python applications, with built-in trace_id support for easy request tracking."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/your-username/yai-nexus-logger"
+"Bug Tracker" = "https://github.com/your-username/yai-nexus-logger/issues"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "fastapi",
+  "uvicorn[standard]",
+  "httpx",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+] 
