@@ -2,10 +2,11 @@
 
 from fastapi.testclient import TestClient
 
-from examples.fastapi_example import app as real_app
+from examples.fastapi_example import create_app
 
 # 使用 TestClient 来测试我们的 FastAPI 应用
-client = TestClient(real_app)
+# 通过调用 create_app() 来获取 app 实例
+client = TestClient(create_app())
 
 
 def test_root_endpoint():
@@ -14,7 +15,7 @@ def test_root_endpoint():
     """
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Hello from yai-nexus-logger!"}
+    assert response.json() == {"message": "Hello World"}
 
     # 验证中间件是否添加了 trace_id 头
     assert "X-Trace-ID" in response.headers
@@ -42,5 +43,5 @@ def test_error_endpoint_logging():
     """
     response = client.get("/error")
     assert response.status_code == 200
-    assert response.json() == {"message": "Error endpoint triggered and logged."}
+    assert response.json() == {"message": "An error was logged."}
     assert "X-Trace-ID" in response.headers

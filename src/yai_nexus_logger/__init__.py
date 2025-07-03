@@ -8,10 +8,12 @@ YAI Nexus Logger.
 
 __version__ = "0.2.0"
 
-# 从 .logger_builder 模块导入 LoggerBuilder 和新的 get_logger 函数
-from .logger_builder import LoggerBuilder, get_logger
+# 从 .configurator 模块导入 LoggerConfigurator 类
+from .configurator import LoggerConfigurator
+# 从 .core 模块导入核心函数
+from .core import init_logging, get_logger
 # 从 .trace_context 模块导入 trace_context，用于追踪ID
 from .trace_context import trace_context
 
 # 定义对外暴露的公共接口
-__all__ = ["LoggerBuilder", "get_logger", "trace_context"]
+__all__ = ["LoggerConfigurator", "init_logging", "get_logger", "trace_context"]

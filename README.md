@@ -40,7 +40,7 @@ pip install 'yai-nexus-logger[sls]'
 在启动你的应用前，根据需要设置以下环境变量。
 
 **基础配置:**
-- `LOG_APP_NAME`: 你的应用名称 (默认: `app`)。**这个名称很重要，它将作为所有日志记录器的“根”。**
+- `LOG_APP_NAME`: 你的应用名称 (默认: `app`)。**这个名称很重要，它将作为所有日志记录器的"根"。**
 - `LOG_LEVEL`: 日志级别，如 "INFO", "DEBUG" (默认: `INFO`)
 
 **输出到文件 (可选):**
@@ -90,7 +90,7 @@ except Exception as e:
 # (可选) 任务完成，清除追踪ID
 trace_context.reset_trace_id(token)
 ```
-就这样！`get_logger` 会自动读取所有环境变量，并在第一次被调用时完成对根记录器（由`LOG_APP_NAME`定义）的所有复杂配置工作。之后你从任何模块中获取的 logger 都会成为它的“孩子”，自动享受到所有配置好的功能。
+就这样！`get_logger` 会自动读取所有环境变量，并在第一次被调用时完成对根记录器（由`LOG_APP_NAME`定义）的所有复杂配置工作。之后你从任何模块中获取的 logger 都会成为它的"孩子"，自动享受到所有配置好的功能。
 
 ## 🌐 与 FastAPI 和 Uvicorn 集成
 
@@ -176,27 +176,42 @@ logger.error("数据库连接失败")
 
 ## ⚙️ 高级用法：手动构建
 
-如果你需要在代码中进行更精细的动态控制，或者无法使用环境变量，你依然可以使用 `LoggerBuilder` 来手动构建 logger。**请注意，这种方式会覆盖基于环境变量的自动配置。**
+如果你需要在代码中进行更精细的动态控制，或者无法使用环境变量，你依然可以使用 `LoggerConfigurator` 来手动构建 logger。**请注意，这种方式会覆盖基于环境变量的自动配置。**
 
-```python
-from yai_nexus_logger import LoggerBuilder
+from yai_nexus_logger import LoggerConfigurator, init_logging, get_logger
 
-# 使用 LoggerBuilder 像搭积木一样构建一个名为 "manual_app" 的根 logger
-# 所有后续通过 get_logger() 获取的 logger 都会继承此配置（如果 LOG_APP_NAME 设为 manual_app）
-logger = (
-    LoggerBuilder(name="manual_app", level="DEBUG")
+# 1. 使用 LoggerConfigurator 手动配置
+# 注意：配置器不再需要 `name`，它会自动从环境变量 LOG_APP_NAME 或默认值 "app" 获取
+# 你可以在这里设置环境变量，来影响下面的配置
+# os.environ["LOG_APP_NAME"] = "manual_app"
+
+configurator = (
+    LoggerConfigurator(level="DEBUG")
     .with_console_handler()
-    .with_file_handler(path="logs/manual_app.log")
-    .with_sls_handler(
-        endpoint="...",
-        access_key_id="...",
-        access_key_secret="...",
-        project="...",
-        logstore="...",
-    )
-    .with_uvicorn_integration()
-    .build()
+    .with_file_handler() # 默认路径是 logs/manual_app.log (取决于 LOG_APP_NAME)
 )
 
-logger.info("这是一个手动配置的 logger。")
-```
+# 2. 调用 init_logging 应用配置
+init_logging(configurator)
+
+# 3. 在应用的任何地方获取 logger
+# get_logger() 会获取到名为 "manual_app" 的根 logger
+logger = get_logger()
+
+logger.debug("这是一个手动配置的 debug 信息。")
+logger.info("这个 logger 继承了手动配置。")
+
+# 你也可以获取子 logger
+db_logger = get_logger("database")
+db_logger.info("正在连接数据库...")
+
+## 贡献
+
+欢迎任何形式的贡献！无论是提交 issue、发起 pull request 还是提供建议，我们都非常欢迎。
+
+在提交代码前，请确保：
+- 代码遵循 PEP 8 风格指南。
+- 相关的测试用例已添加并通过。
+
+## License
+[MIT](LICENSE)
