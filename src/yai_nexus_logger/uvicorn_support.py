@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 
-def get_uvicorn_log_config(level: str = "INFO") -> Dict[str, Any]:
+def get_default_uvicorn_log_config(level: str = "INFO") -> Dict[str, Any]:
     """
     获取 uvicorn 的日志配置。
     此配置将 uvicorn 的访问日志和应用日志重定向到与我们自定义 logger 相同的处理器。

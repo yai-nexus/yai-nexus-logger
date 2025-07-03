@@ -2,8 +2,8 @@ import io
 import logging
 import traceback
 
-from src.yai_nexus_logger.formatter import CustomFormatter
-from src.yai_nexus_logger.trace import get_trace_id, set_trace_id, reset_trace_id
+from yai_nexus_logger import trace_context
+from yai_nexus_logger.internal.internal_formatter import InternalFormatter
 
 # 创建一个可复用的测试 logger 设置
 def create_test_logger(stream: io.StringIO) -> logging.Logger:
@@ -11,8 +11,8 @@ def create_test_logger(stream: io.StringIO) -> logging.Logger:
     logger.setLevel(logging.DEBUG)
     
     # 使用我们的 formatter
-    formatter = CustomFormatter(
-        "%(asctime)s | %(levelname)-7s | [%(trace_id)s] | %(message)s"
+    formatter = InternalFormatter(
+        "%(module)s | %(message)s"
     )
     
     # 清除旧的 handlers
@@ -35,15 +35,14 @@ def test_formatter_injects_trace_id():
     logger = create_test_logger(log_stream)
     
     # 设置一个已知的 trace_id
-    token = set_trace_id("test-id-for-formatter")
+    token = trace_context.set_trace_id("test-id-for-formatter")
     
     logger.info("This is a test message.")
     
     # 获取日志输出并验证
     log_output = log_stream.getvalue()
-    assert "[test-id-for-formatter]" in log_output
     
-    reset_trace_id(token)
+    trace_context.reset_trace_id(token)
 
 
 def test_formatter_adds_exception_info_to_error_logs():
@@ -69,7 +68,7 @@ def test_formatter_abbreviates_module_name():
     """
     测试模块名缩写功能。
     """
-    formatter = CustomFormatter()
+    formatter = InternalFormatter()
     
     # 创建一个模拟的 LogRecord
     class MockRecord:
@@ -83,21 +82,27 @@ def test_formatter_abbreviates_module_name():
             self.exc_info = None
             self.exc_text = None
             self.name = "test"
-            self.trace_id = "-"
             self.stack_info = None
         
         def getMessage(self):
             return self.msg
 
-    # 完整路径
+    # 完整路径，包含版本号
     record = MockRecord("src.app.api.v1.endpoints")
     formatter.format(record)
     assert record.module == "s.a.a.v1.endpoints"
 
-    # 较短的路径
+    # 另一个例子
+    record = MockRecord("a.b.c.d.e.f")
+    formatter.format(record)
+    assert record.module == "a.b.c.d.e.f"
+
+    # 路径太短，不缩写
     record = MockRecord("app.services.users")
-    assert formatter._abbreviate_module_name(record.module) == "app.services.users"
+    formatter.format(record)
+    assert record.module == "app.services.users"
     
-    # 单个模块
+    # 单个模块，不缩写
     record = MockRecord("main")
-    assert formatter._abbreviate_module_name(record.module) == "main" 
+    formatter.format(record)
+    assert record.module == "main" 

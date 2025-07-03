@@ -2,7 +2,7 @@
 name = "yai-nexus-logger"
 version = "0.0.1"
 authors = [
-  { name="Nero Claudius", email="your-email@example.com" },
+  { name="Harry", email="harrytang.next@gmail.com" },
 ]
 description = "A powerful, structured logger for modern Python applications, with built-in trace_id support for easy request tracking."
 readme = "README.md"
@@ -14,8 +14,8 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/your-username/yai-nexus-logger"
-"Bug Tracker" = "https://github.com/your-username/yai-nexus-logger/issues"
+"Homepage" = "https://github.com/yai-nexus/yai-nexus-logger"
+"Bug Tracker" = "https://github.com/yai-nexus/yai-nexus-logger/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -30,4 +30,8 @@ minversion = "6.0"
 addopts = "-ra -q"
 testpaths = [
     "tests",
+]
+pythonpath = [
+  ".",
+  "src",
 ] 

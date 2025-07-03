@@ -1,10 +1,10 @@
 import logging
 import traceback
 
-from . import trace
+from ..trace_context import trace_context
 
 
-class CustomFormatter(logging.Formatter):
+class InternalFormatter(logging.Formatter):
     """
     自定义日志格式化程序，主要功能：
     1. 在日志记录中自动添加 trace_id。
@@ -29,13 +29,15 @@ class CustomFormatter(logging.Formatter):
             return module_name
         
         # 缩写前几个部分，保留最后一部分
-        abbreviated_parts = [p[0] for p in parts[:-1]]
+        abbreviated_parts = [
+            p[0] if p.isalpha() else p for p in parts[:-1]
+        ]
         return ".".join(abbreviated_parts) + "." + parts[-1]
 
 
     def format(self, record: logging.LogRecord) -> str:
         # 注入 trace_id
-        record.trace_id = trace.get_trace_id() or "-"
+        record.trace_id = trace_context.get_trace_id() or "-"
 
         # 缩写模块名
         record.module = self._abbreviate_module_name(record.module)

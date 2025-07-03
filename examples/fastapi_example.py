@@ -6,12 +6,19 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 
 # 从我们的库中导入
-from yai_nexus_logger import get_trace_id, reset_trace_id, set_trace_id, setup_logger, get_uvicorn_log_config
+from yai_nexus_logger import (
+    LoggerBuilder,
+    get_default_uvicorn_log_config,
+    trace_context,
+)
 
-# 1. 初始化 logger
-# 你可以在应用启动时执行一次
-# 也可以在这里直接获取 logger，因为 setup_logger 会处理重复初始化的问题
-logger = setup_logger(name="my-fastapi-app", level="DEBUG")
+# 1. 使用 LoggerBuilder 初始化 logger
+logger = (
+    LoggerBuilder(name="my-fastapi-app", level="DEBUG")
+    .with_console_handler()
+    .with_file_handler()
+    .build()
+)
 
 app = FastAPI()
 
@@ -25,16 +32,16 @@ async def logging_middleware(request: Request, call_next: Callable) -> Response:
     3. 记录每个请求的耗时和状态。
     """
     # 尝试从请求头获取 trace_id，如果没有则 get_trace_id() 会自动生成一个新的
-    trace_id = request.headers.get("X-Trace-ID") or get_trace_id()
+    trace_id = request.headers.get("X-Trace-ID") or trace_context.get_trace_id()
     
     # set_trace_id 会返回一个 token，用于稍后重置 context
-    token = set_trace_id(trace_id)
+    token = trace_context.set_trace_id(trace_id)
     
     start_time = time()
     
     try:
         response = await call_next(request)
-        response.headers["X-Trace-ID"] = get_trace_id()
+        response.headers["X-Trace-ID"] = trace_context.get_trace_id()
         status_code = response.status_code
     except Exception as e:
         logger.exception("An unhandled exception occurred")
@@ -47,7 +54,7 @@ async def logging_middleware(request: Request, call_next: Callable) -> Response:
             f'"{request.method} {request.url.path}" {status_code} {process_time:.2f}ms'
         )
         # 请求结束时重置 trace_id，清理上下文
-        reset_trace_id(token)
+        trace_context.reset_trace_id(token)
 
     return response
 
@@ -83,7 +90,7 @@ async def trigger_error():
 if __name__ == "__main__":
     # 3. 使用我们的 uvicorn 配置
     # 这会将 uvicorn 的访问日志也格式化并输出到我们配置的文件和控制台
-    log_config = get_uvicorn_log_config(level="INFO")
+    log_config = get_default_uvicorn_log_config(level="INFO")
     
     # 启动 uvicorn 服务器
     uvicorn.run(
