@@ -12,7 +12,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run ruff
-        uses: astral-sh/ruff-action@v1
-        with:
-          # 可选: 指定 ruff 的版本
-          version: "latest" 
+        uses: astral-sh/ruff-action@v3 
