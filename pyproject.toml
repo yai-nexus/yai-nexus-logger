@@ -38,6 +38,7 @@ addopts = "-ra -q --cov=src/yai_nexus_logger --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
+norecursedirs = ["examples", "logs", "htmlcov", "venv"]
 pythonpath = [
   ".",
   "src",

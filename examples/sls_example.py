@@ -10,53 +10,55 @@
 """
 
 import logging
+import os
+import time
 import uuid
-from yai_nexus_logger import LoggerBuilder, trace_context
+from logging.handlers import TimedRotatingFileHandler
+
+from yai_nexus_logger import LoggerConfigurator, init_logging, get_logger, trace_context
 
 # 阿里云SLS配置信息 - 北京区域
 # 从环境变量或.env文件读取SLS配置
-import os
 from dotenv import load_dotenv
 
 # 加载.env文件中的环境变量
 load_dotenv()
 
-SLS_CONFIG = {
-    "endpoint": os.getenv("SLS_ENDPOINT", "cn-beijing.log.aliyuncs.com"),
-    "access_key_id": os.getenv("SLS_ACCESS_KEY_ID"),
-    "access_key_secret": os.getenv("SLS_ACCESS_KEY_SECRET"),
-    "project": os.getenv("SLS_PROJECT", "yai-log-test"),
-    "logstore": os.getenv("SLS_LOGSTORE", "app-log"),
-    "topic": os.getenv("SLS_TOPIC", "python_app"),
-    "source": os.getenv("SLS_SOURCE", "example_app"),
-}
+# 从环境变量加载敏感信息
+# 为了安全，切勿将 AccessKey ID 和 Secret 硬编码在代码中
+# 建议使用环境变量、KMS 或其他安全的密钥管理服务
+# load_dotenv()  # 如果你使用 .env 文件，请取消此行注释
+ENDPOINT = os.getenv("SLS_ENDPOINT")
+ACCESS_KEY_ID = os.getenv("SLS_ACCESS_KEY_ID")
+ACCESS_KEY_SECRET = os.getenv("SLS_ACCESS_KEY_SECRET")
+PROJECT = os.getenv("SLS_PROJECT")
+LOGSTORE = os.getenv("SLS_LOGSTORE")
 
 # 验证必要的配置是否存在
 required_keys = ["access_key_id", "access_key_secret"]
-missing_keys = [key for key in required_keys if not SLS_CONFIG[key]]
+missing_keys = [key for key in required_keys if not ACCESS_KEY_ID or not ACCESS_KEY_SECRET]
 if missing_keys:
     raise ValueError(f"缺少必要的SLS配置: {missing_keys}。请在.env文件中设置相应的环境变量。")
 
 
-def basic_sls_example():
-    """基础阿里云SLS日志示例"""
-    print("=== 基础阿里云SLS日志示例 ===")
-    
-    # 创建带有SLS handler的logger
-    logger = (
-        LoggerBuilder(name="sls_app", level="INFO")
+def simple_sls_logging():
+    """演示基本的 SLS 日志记录功能。"""
+    print("\n--- 演示: 基本 SLS 日志 ---")
+    configurator = (
+        LoggerConfigurator(level="INFO")
         .with_console_handler()  # 同时输出到控制台，方便查看
         .with_sls_handler(
-            endpoint=SLS_CONFIG["endpoint"],
-            access_key_id=SLS_CONFIG["access_key_id"],
-            access_key_secret=SLS_CONFIG["access_key_secret"],
-            project=SLS_CONFIG["project"],
-            logstore=SLS_CONFIG["logstore"],
-            topic=SLS_CONFIG["topic"],
-            source=SLS_CONFIG["source"],
+            endpoint=ENDPOINT,
+            access_key_id=ACCESS_KEY_ID,
+            access_key_secret=ACCESS_KEY_SECRET,
+            project=PROJECT,
+            logstore=LOGSTORE,
+            topic="python_app",
+            source="example_app",
         )
-        .build()
     )
+    init_logging(configurator)
+    logger = get_logger()
 
     # 记录不同级别的日志
     logger.info("应用启动成功！这条日志会被发送到阿里云SLS")
@@ -67,24 +69,24 @@ def basic_sls_example():
     logger.info("用户登录", extra={"user_id": "12345", "action": "login"})
 
 
-def trace_id_example():
-    """带追踪ID的日志示例"""
-    print("\n=== 带追踪ID的阿里云SLS日志示例 ===")
-    
-    logger = (
-        LoggerBuilder(name="sls_app_trace", level="INFO")
+def sls_with_trace_id():
+    """演示如何结合 trace_id 进行日志记录，这对于分布式系统追踪至关重要。"""
+    print("\n--- 演示: 带 trace_id 的 SLS 日志 ---")
+    configurator = (
+        LoggerConfigurator(level="INFO")
         .with_console_handler()
         .with_sls_handler(
-            endpoint=SLS_CONFIG["endpoint"],
-            access_key_id=SLS_CONFIG["access_key_id"],
-            access_key_secret=SLS_CONFIG["access_key_secret"],
-            project=SLS_CONFIG["project"],
-            logstore=SLS_CONFIG["logstore"],
-            topic=SLS_CONFIG["topic"],
-            source=SLS_CONFIG["source"],
+            endpoint=ENDPOINT,
+            access_key_id=ACCESS_KEY_ID,
+            access_key_secret=ACCESS_KEY_SECRET,
+            project=PROJECT,
+            logstore=LOGSTORE,
+            topic="python_app",
+            source="example_app",
         )
-        .build()
     )
+    init_logging(configurator)
+    logger = get_logger()
 
     # 模拟一个请求的处理过程
     request_id = str(uuid.uuid4())
@@ -96,7 +98,6 @@ def trace_id_example():
         logger.info("执行业务逻辑")
         
         # 模拟一些处理...
-        import time
         time.sleep(0.1)
         
         logger.info("请求处理完成")
@@ -106,24 +107,24 @@ def trace_id_example():
         trace_context.reset_trace_id(token)
 
 
-def exception_logging_example():
-    """异常日志示例"""
-    print("\n=== 异常日志示例 ===")
-    
-    logger = (
-        LoggerBuilder(name="sls_exception", level="DEBUG")
+def sls_with_exception():
+    """演示如何在捕获异常时记录日志，包括堆栈信息。"""
+    print("\n--- 演示: 记录异常信息到 SLS ---")
+    configurator = (
+        LoggerConfigurator(level="DEBUG")
         .with_console_handler()
         .with_sls_handler(
-            endpoint=SLS_CONFIG["endpoint"],
-            access_key_id=SLS_CONFIG["access_key_id"],
-            access_key_secret=SLS_CONFIG["access_key_secret"],
-            project=SLS_CONFIG["project"],
-            logstore=SLS_CONFIG["logstore"],
+            endpoint=ENDPOINT,
+            access_key_id=ACCESS_KEY_ID,
+            access_key_secret=ACCESS_KEY_SECRET,
+            project=PROJECT,
+            logstore=LOGSTORE,
             topic="exceptions",  # 使用不同的topic来分类异常日志
-            source=SLS_CONFIG["source"],
+            source="example_app",
         )
-        .build()
     )
+    init_logging(configurator)
+    logger = get_logger()
 
     try:
         # 模拟一个会产生异常的操作
@@ -134,25 +135,25 @@ def exception_logging_example():
         logger.error(f"错误详情: {str(e)}")
 
 
-def multi_handler_example():
-    """多个处理器示例：同时输出到控制台、文件和SLS"""
-    print("\n=== 多处理器示例 ===")
-    
-    logger = (
-        LoggerBuilder(name="multi_handler", level="DEBUG")
+def sls_with_multiple_handlers():
+    """演示如何同时将日志发送到 SLS、控制台和文件。"""
+    print("\n--- 演示: 多 Handler (SLS, Console, File) ---")
+    configurator = (
+        LoggerConfigurator(level="DEBUG")
         .with_console_handler()                    # 输出到控制台
         .with_file_handler(path="logs/app.log")    # 输出到文件
         .with_sls_handler(                        # 输出到阿里云SLS
-            endpoint=SLS_CONFIG["endpoint"],
-            access_key_id=SLS_CONFIG["access_key_id"],
-            access_key_secret=SLS_CONFIG["access_key_secret"],
-            project=SLS_CONFIG["project"],
-            logstore=SLS_CONFIG["logstore"],
+            endpoint=ENDPOINT,
+            access_key_id=ACCESS_KEY_ID,
+            access_key_secret=ACCESS_KEY_SECRET,
+            project=PROJECT,
+            logstore=LOGSTORE,
             topic="multi_output",
-            source=SLS_CONFIG["source"],
+            source="example_app",
         )
-        .build()
     )
+    init_logging(configurator)
+    logger = get_logger()
 
     logger.debug("这条日志会同时出现在控制台、文件和阿里云SLS中")
     logger.info("多重输出让你可以灵活地管理日志")
@@ -160,32 +161,26 @@ def multi_handler_example():
 
 
 if __name__ == "__main__":
-    print("阿里云SLS日志示例")
-    print("注意：运行前请先配置正确的SLS_CONFIG信息！")
-    print()
-    
-    # 验证配置（使用北京区域的真实配置）
-    print(f"🔧 使用配置:")
-    print(f"   区域: {SLS_CONFIG['endpoint']}")
-    print(f"   项目: {SLS_CONFIG['project']}")
-    print(f"   日志库: {SLS_CONFIG['logstore']}")
-    print(f"   AccessKey: {SLS_CONFIG['access_key_id'][:8]}...")
-    print()
-    
-    try:
-        basic_sls_example()
-        trace_id_example()
-        exception_logging_example()
-        multi_handler_example()
+    # 验证必要的配置是否存在
+    required_keys = ["ACCESS_KEY_ID", "ACCESS_KEY_SECRET", "SLS_ENDPOINT", "SLS_PROJECT", "SLS_LOGSTORE"]
+    if any(not os.getenv(key) for key in required_keys):
+        print("🔴 错误: 缺少必要的SLS环境变量。请在运行前设置以下变量: ")
+        print(", ".join(required_keys))
+    else:
+        print(f"🔧 使用配置:")
+        print(f"   区域: {ENDPOINT}")
+        print(f"   项目: {PROJECT}")
+        print(f"   日志库: {LOGSTORE}")
+        print(f"   AccessKey: {ACCESS_KEY_ID[:8]}...")
+        print()
         
-        print("\n✅ 所有示例运行完成！请登录阿里云日志服务控制台查看日志。")
-        
-    except ImportError as e:
-        if "aliyun-log-python-sdk" in str(e):
-            print("❌ 错误: 阿里云日志SDK未安装")
-            print("请运行: pip install 'yai-nexus-logger[sls]'")
-        else:
-            raise
-    except Exception as e:
-        print(f"❌ 运行出错: {e}")
-        print("请检查阿里云SLS配置是否正确") 
+        try:
+            simple_sls_logging()
+            sls_with_trace_id()
+            sls_with_exception()
+            sls_with_multiple_handlers()
+            
+            print("\n✅ 所有示例运行完成！请登录阿里云日志服务控制台查看日志。")
+        finally:
+            # 确保所有日志都被发送
+            logging.shutdown() 
