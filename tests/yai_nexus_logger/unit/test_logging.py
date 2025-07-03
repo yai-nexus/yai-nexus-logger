@@ -11,7 +11,9 @@ from yai_nexus_logger import (
     LoggerConfigurator,
     init_logging,
     get_logger,
+    trace_context,
 )
+from yai_nexus_logger.internal.internal_handlers import SLS_SDK_AVAILABLE
 
 
 def clean_logging_environment():
@@ -41,6 +43,7 @@ def test_init_logging_from_env(monkeypatch):
     monkeypatch.setenv("LOG_APP_NAME", "env_app")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("LOG_CONSOLE_ENABLED", "true")
+    monkeypatch.setenv("SLS_ENABLED", "false")
 
     init_logging()
 
@@ -95,3 +98,40 @@ def test_init_logging_sls_missing_vars_warning(monkeypatch):
 
     mock_warnings.warn.assert_called_once()
     assert "SLS logging is enabled, but some required SLS" in mock_warnings.warn.call_args[0][0]
+
+
+@pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
+@patch("yai_nexus_logger.internal.internal_handlers.SLSLogHandler.emit")
+def test_init_logging_with_sls_handler_mocked(mock_emit, monkeypatch):
+    """
+    Test that init_logging, when configured for SLS via environment variables,
+    correctly adds the SLS handler and that the handler attempts to send logs.
+    The handler's emit method is mocked to prevent actual data transmission.
+    """
+    clean_logging_environment()
+    sls_env_vars = {
+        "LOG_APP_NAME": "sls_unit_test",
+        "LOG_LEVEL": "INFO",
+        "SLS_ENABLED": "true",
+        "SLS_ENDPOINT": "fake-endpoint.log.aliyuncs.com",
+        "SLS_ACCESS_KEY_ID": "fake_id",
+        "SLS_ACCESS_KEY_SECRET": "fake_secret",
+        "SLS_PROJECT": "fake_project",
+        "SLS_LOGSTORE": "fake_logstore",
+        "SLS_TOPIC": "test_topic",
+    }
+    monkeypatch.setattr(os, "environ", sls_env_vars)
+
+    init_logging()
+    logger = get_logger("sls_unit_logger")
+
+    trace_id = "trace-for-sls-unit-test"
+    trace_context.set_trace_id(trace_id)
+
+    test_message = "This is a unit test message for SLS."
+    logger.warning(test_message)
+
+    mock_emit.assert_called_once()
+    log_record = mock_emit.call_args[0][0]
+    assert test_message in log_record.getMessage()
+    assert log_record.levelname == "WARNING"

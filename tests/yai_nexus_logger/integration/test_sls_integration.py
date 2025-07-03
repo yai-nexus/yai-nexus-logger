@@ -23,45 +23,6 @@ def clean_logging_environment():
     with patch("logging.Logger.hasHandlers", return_value=False):
         yield
 
-# 我们现在模拟我们自己的 Handler 的 emit 方法，这是集成测试的正确方式
-@patch("yai_nexus_logger.internal.internal_handlers.SLSLogHandler.emit")
-def test_sls_handler_sends_logs_with_mocked_backend(mock_emit):
-    """
-    测试 get_logger 配置的 SLS handler 是否会尝试发送日志。
-    我们 mock 了 handler 的 emit 方法，所以不会真的发送数据。
-    """
-    sls_env_vars = {
-        "LOG_APP_NAME": "sls_integration_test",
-        "LOG_LEVEL": "INFO",
-        "SLS_ENABLED": "true",
-        "SLS_ENDPOINT": "fake-endpoint.log.aliyuncs.com",
-        "SLS_ACCESS_KEY_ID": "fake_id",
-        "SLS_ACCESS_KEY_SECRET": "fake_secret",
-        "SLS_PROJECT": "fake_project",
-        "SLS_LOGSTORE": "fake_logstore",
-        "SLS_TOPIC": "test_topic",
-    }
-    
-    # 使用 patch.dict 来临时设置环境变量
-    with patch.dict(os.environ, sls_env_vars):
-        init_logging()  # 显式调用初始化
-        logger = get_logger("sls_integration_logger")
-        
-        trace_id = "trace-for-sls-test"
-        trace_context.set_trace_id(trace_id)
-
-        test_message = "This is a message for SLS."
-        logger.warning(test_message)
-
-    # 验证我们的 handler 的 "emit" 方法被呼叫了一次
-    mock_emit.assert_called_once()
-    
-    # (可选) 深入检查传递给 emit 的内容
-    log_record = mock_emit.call_args[0][0]
-    assert test_message in log_record.getMessage()
-    assert log_record.levelname == "WARNING"
-
-
 # 标记这个测试需要一个特殊的环境变量来运行，避免在 CI/CD 环境中自动执行
 @pytest.mark.skipif(
     os.getenv("RUN_REAL_SLS_TESTS", "false").lower() != "true",
