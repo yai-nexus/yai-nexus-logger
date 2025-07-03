@@ -1,4 +1,5 @@
 """Unit tests for the InternalFormatter."""
+
 import io
 import logging
 
@@ -59,6 +60,7 @@ def test_formatter_abbreviates_module_name():
     测试模块名缩写功能。
     """
     formatter = InternalFormatter()
+
     # 创建一个模拟的 LogRecord
     # pylint: disable=too-many-instance-attributes,too-few-public-methods
     class MockRecord:
@@ -75,6 +77,7 @@ def test_formatter_abbreviates_module_name():
             self.exc_text = None
             self.name = "test"
             self.stack_info = None
+
         # pylint: disable=invalid-name
         def getMessage(self):
             """Mimics the original getMessage method."""
@@ -97,4 +100,4 @@ def test_formatter_abbreviates_module_name():
     # 单个模块，不缩写
     record = MockRecord("main")
     formatter.format(record)
-    assert record.module == "main" 
+    assert record.module == "main"

@@ -1,72 +1,70 @@
 """Provides support for integrating the logger with Uvicorn's logging system."""
-from typing import Any, Dict
+import logging
+from typing import List
+
+import uvicorn.logging
+from uvicorn.logging import AccessFormatter
+
+from yai_nexus_logger.trace_context import trace_context
 
 
-def get_default_uvicorn_log_config(level: str = "INFO") -> Dict[str, Any]:
+class UvicornAccessFormatter(logging.Formatter):
     """
-    获取 uvicorn 的日志配置。
-    此配置将 uvicorn 的访问日志和应用日志重定向到与我们自定义 logger 相同的处理器。
+    Custom formatter for Uvicorn access logs to include the trace_id.
+    It wraps Uvicorn's default AccessFormatter and prepends the trace_id.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.access_formatter = AccessFormatter()
+
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Formats the log message to include trace_id and other structured info.
+        """
+        access_log = self.access_formatter.format(record)
+
+        # Get trace_id from context
+        trace_id = trace_context.get_trace_id(create_if_missing=False)
+        trace_id_str = f"[{trace_id}]" if trace_id else "[No-Trace-ID]"
+
+        # Our final format
+        return f"{trace_id_str} | {access_log}"
+
+
+def configure_uvicorn_logging(
+    handlers: List[logging.Handler], level: str = "INFO"
+) -> None:
+    """
+    Reconfigures the Uvicorn loggers to use the application's handlers.
+    This ensures that Uvicorn's logs (access, error, and general) are
+    processed by the same handlers as the application logger, providing
+    a unified logging setup.
 
     Args:
-        level (str): 日志级别。默认为 "INFO"。
-
-    Returns:
-        Dict[str, Any]: uvicorn 的日志配置字典。
+        handlers (List[logging.Handler]): A list of logging handlers to attach.
+        level (str): The logging level to set for the Uvicorn loggers.
     """
-    return {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "()": "uvicorn.logging.DefaultFormatter",
-                "fmt": "%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s | %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
-            },
-            "access": {
-                "()": "uvicorn.logging.AccessFormatter",
-                "fmt": (
-                    '%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s | '
-                    '%(client_addr)s - "%(request_line)s" %(status_code)s'
-                ),
-                "datefmt": "%Y-%m-%d %H:%M:%S",
-            },
-        },
-        "handlers": {
-            "default": {
-                "formatter": "default",
-                "class": "logging.StreamHandler",
-                "stream": "ext://sys.stderr",
-            },
-            "access": {
-                "formatter": "access",
-                "class": "logging.StreamHandler",
-                "stream": "ext://sys.stdout",
-            },
-            "file": {
-                "formatter": "default",
-                "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": "logs/app.log",
-                "when": "midnight",
-                "interval": 1,
-                "backupCount": 30,
-                "encoding": "utf-8",
-            },
-        },
-        "loggers": {
-            "uvicorn": {
-                "handlers": ["default", "file"],
-                "level": level.upper(),
-                "propagate": False,
-            },
-            "uvicorn.error": {
-                "level": level.upper(),
-                "handlers": ["default", "file"],
-                "propagate": True,
-            },
-            "uvicorn.access": {
-                "handlers": ["access", "file"],
-                "level": level.upper(),
-                "propagate": False,
-            },
-        },
-    } 
+    # 1. Detach existing handlers from Uvicorn loggers
+    for name in ["uvicorn", "uvicorn.error", "uvicorn.access"]:
+        log = logging.getLogger(name)
+        log.handlers.clear()
+        log.propagate = False  # Prevent logs from propagating to the root logger
+
+    # 2. Configure 'uvicorn.access' logger
+    uvicorn_access_logger = logging.getLogger("uvicorn.access")
+    # Replace the default formatter with our custom one
+    for handler in handlers:
+        # Create a copy of the handler to avoid side effects
+        handler_copy = logging.StreamHandler(handler.stream)
+        handler_copy.setFormatter(UvicornAccessFormatter())
+        uvicorn_access_logger.addHandler(handler_copy)
+    uvicorn_access_logger.setLevel(level.upper())
+
+    # 3. Configure 'uvicorn' and 'uvicorn.error' loggers
+    # These will use the formatters already attached to the handlers
+    for name in ["uvicorn", "uvicorn.error"]:
+        log = logging.getLogger(name)
+        for handler in handlers:
+            log.addHandler(handler)
+        log.setLevel(level.upper())

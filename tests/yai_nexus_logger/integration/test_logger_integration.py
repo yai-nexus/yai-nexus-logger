@@ -1,18 +1,22 @@
 """Integration tests for the logger."""
+
 from yai_nexus_logger.logger_builder import LoggerBuilder
 from yai_nexus_logger.trace_context import trace_context
 
+
 def test_logger_integration_with_console_and_file(tmp_path, capsys):
     """
-    Integration test to ensure the logger works end-to-end with console and file handlers.
+    Integration test for end-to-end logging with console and file handlers.
     """
     log_file_path = tmp_path / "test_app.log"
 
     # 1. Build the logger
     builder = LoggerBuilder("integration_test", level="DEBUG")
-    logger = builder.with_console_handler() \
-                    .with_file_handler(path=str(log_file_path)) \
-                    .build()
+    logger = (
+        builder.with_console_handler()
+        .with_file_handler(path=str(log_file_path))
+        .build()
+    )
 
     # 2. Set a trace_id
     trace_id = "test-trace-id-123"
@@ -25,7 +29,7 @@ def test_logger_integration_with_console_and_file(tmp_path, capsys):
     # 4. Check console output
     captured = capsys.readouterr()
     stdout = captured.out.strip()
-    
+
     # Verify console output
     assert "INFO" in stdout
     assert "test_logger_integration" in stdout
@@ -36,7 +40,7 @@ def test_logger_integration_with_console_and_file(tmp_path, capsys):
 
     # 5. Check file output
     assert log_file_path.exists()
-    with open(log_file_path, 'r', encoding="utf-8") as f:
+    with open(log_file_path, encoding="utf-8") as f:
         file_content = f.read().strip()
 
     # Verify file content
@@ -48,4 +52,4 @@ def test_logger_integration_with_console_and_file(tmp_path, capsys):
     assert "This is a warning message." in file_content
 
     # Clean up context
-    trace_context.reset_trace_id(token) 
+    trace_context.reset_trace_id(token)

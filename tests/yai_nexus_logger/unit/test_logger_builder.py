@@ -1,4 +1,5 @@
 """Unit tests for the LoggerBuilder."""
+
 import logging
 import os
 from pathlib import Path
@@ -26,7 +27,10 @@ def test_builder_adds_file_handler():
         os.remove(log_file)
 
     logger = LoggerBuilder("file_test").with_file_handler(path=str(log_file)).build()
-    assert any(isinstance(h, logging.handlers.TimedRotatingFileHandler) for h in logger.handlers)
+    assert any(
+        isinstance(h, logging.handlers.TimedRotatingFileHandler)
+        for h in logger.handlers
+    )
 
     # 验证文件是否已创建
     logger.warning("This should create a file.")
@@ -48,7 +52,9 @@ def test_builder_is_fluent():
         os.remove(log_file)
 
     builder = LoggerBuilder("fluent_test", "WARNING")
-    returned_builder = builder.with_console_handler().with_file_handler(path=str(log_file))
+    returned_builder = builder.with_console_handler().with_file_handler(
+        path=str(log_file)
+    )
 
     assert returned_builder is builder
 
@@ -56,4 +62,26 @@ def test_builder_is_fluent():
     logger.error("Testing fluent build.")
 
     assert log_file.exists()
-    os.remove(log_file) 
+    os.remove(log_file)
+
+
+def test_with_uvicorn_integration(mocker):
+    """
+    Test that with_uvicorn_integration() correctly triggers uvicorn configuration.
+    """
+    mock_configure_uvicorn = mocker.patch(
+        "yai_nexus_logger.logger_builder.configure_uvicorn_logging"
+    )
+
+    builder = (
+        LoggerBuilder("uvicorn_test", "DEBUG")
+        .with_console_handler()
+        .with_uvicorn_integration()
+    )
+    logger = builder.build()
+
+    mock_configure_uvicorn.assert_called_once()
+    # Verify it was called with the builder's handlers and level
+    mock_configure_uvicorn.assert_called_with(
+        handlers=logger.handlers, level="DEBUG"
+    )

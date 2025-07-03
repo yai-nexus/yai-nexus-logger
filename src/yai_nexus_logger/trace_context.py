@@ -1,7 +1,8 @@
 """Manages the trace context using contextvars for request tracing."""
-from contextvars import ContextVar, Token
+
 import logging
 import uuid
+from contextvars import ContextVar, Token
 
 
 class TraceContext:
@@ -28,16 +29,19 @@ class TraceContext:
         logging.debug("ContextVar set trace_id: %s", trace_id)
         return self._trace_id_context.set(trace_id)
 
-    def get_trace_id(self) -> str:
+    def get_trace_id(self, create_if_missing: bool = True) -> str | None:
         """
         获取当前上下文的 trace_id。
-        如果 trace_id 不存在，则会生成一个新的 UUID v4 并设置到上下文中。
+        如果 trace_id 不存在，则会根据 `create_if_missing` 的值决定是否创建。
+
+        Args:
+            create_if_missing (bool): 如果为 True 且 trace_id 不存在，则创建新的。
 
         Returns:
-            当前或新生成的 trace_id。
+            当前或新生成的 trace_id，或者 None。
         """
         trace_id = self._trace_id_context.get()
-        if trace_id is None:
+        if trace_id is None and create_if_missing:
             trace_id = str(uuid.uuid4())
             self.set_trace_id(trace_id)
         logging.debug("ContextVar get trace_id: %s", trace_id)
@@ -54,4 +58,4 @@ class TraceContext:
 
 
 # 创建一个 TraceContext 的单例，供整个应用使用
-trace_context = TraceContext() 
+trace_context = TraceContext()

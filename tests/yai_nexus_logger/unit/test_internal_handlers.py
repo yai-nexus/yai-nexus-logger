@@ -1,4 +1,5 @@
 """Unit tests for the internal log handlers."""
+
 import logging
 import sys
 from unittest.mock import MagicMock, patch
@@ -58,4 +59,4 @@ def test_get_file_handler_creates_directory(mock_formatter, tmp_path):
 
     get_file_handler(formatter=mock_formatter, path=str(log_file))
 
-    assert log_dir.exists() 
+    assert log_dir.exists()

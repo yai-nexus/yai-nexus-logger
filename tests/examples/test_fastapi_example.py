@@ -1,4 +1,5 @@
 """Tests for the FastAPI example application."""
+
 from fastapi.testclient import TestClient
 
 from examples.fastapi_example import app as real_app
@@ -14,7 +15,7 @@ def test_root_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello from yai-nexus-logger!"}
-    
+
     # 验证中间件是否添加了 trace_id 头
     assert "X-Trace-ID" in response.headers
     assert len(response.headers["X-Trace-ID"]) > 0
@@ -26,9 +27,9 @@ def test_middleware_uses_existing_trace_id():
     """
     custom_trace_id = "my-awesome-custom-trace-id"
     headers = {"X-Trace-ID": custom_trace_id}
-    
+
     response = client.get("/", headers=headers)
-    
+
     assert response.status_code == 200
     assert response.headers["X-Trace-ID"] == custom_trace_id
 
@@ -42,4 +43,4 @@ def test_error_endpoint_logging():
     response = client.get("/error")
     assert response.status_code == 200
     assert response.json() == {"message": "Error endpoint triggered and logged."}
-    assert "X-Trace-ID" in response.headers 
+    assert "X-Trace-ID" in response.headers

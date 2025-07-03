@@ -20,6 +20,9 @@ classifiers = [
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-cov",
+  "pytest-mock",
+  "ruff",
   "fastapi",
   "uvicorn[standard]",
   "httpx",
@@ -27,11 +30,27 @@ dev = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
+addopts = "-ra -q --cov=src/yai_nexus_logger --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
 pythonpath = [
   ".",
   "src",
-] 
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "S"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto" 
