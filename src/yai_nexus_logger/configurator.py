@@ -5,7 +5,7 @@ import os
 import sys
 import threading
 import warnings
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import (
@@ -15,7 +15,7 @@ from .internal.internal_handlers import (
     SLS_SDK_AVAILABLE,
 )
 from .uvicorn_support import configure_uvicorn_logging
-from .internal.settings import settings
+from .internal.internal_settings import settings
 
 LOGGING_FORMAT = (
     "%(asctime)s.%(msecs)03d | %(levelname)-7s | "

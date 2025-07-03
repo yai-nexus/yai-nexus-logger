@@ -3,8 +3,9 @@
 import os
 from unittest.mock import patch, MagicMock
 import pytest
+import logging
 
-from yai_nexus_logger import get_logger, trace_context
+from yai_nexus_logger import get_logger, trace_context, init_logging
 from yai_nexus_logger.internal.internal_handlers import SLS_SDK_AVAILABLE
 
 # 仅在安装了 SLS 依赖时运行此文件中的所有测试
@@ -12,15 +13,14 @@ pytestmark = pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not insta
 
 
 @pytest.fixture(autouse=True)
-def reset_logger_config():
-    """在每次测试前重置 logger 配置，确保环境干净"""
-    # 这个 import 必须放在这里，以便在测试运行时重置
-    from yai_nexus_logger import logger_builder
-    
-    # 使用 with patch.dict 来确保在测试期间 _initialized_loggers 是空的，
-    # 并且在测试结束后恢复原状，避免对其他测试文件产生副作用。
-    with patch.object(logger_builder, "_initialized_loggers", {}), \
-         patch.object(logger_builder, "_is_configured", False):
+def clean_logging_environment():
+    """A helper to ensure a clean logging state before each test."""
+    # 清除 root logger 的所有 handlers
+    logging.root.handlers.clear()
+    # 关闭所有现有的 loggers
+    logging.shutdown()
+    # 确保可以重新配置
+    with patch("logging.Logger.hasHandlers", return_value=False):
         yield
 
 # 我们现在模拟我们自己的 Handler 的 emit 方法，这是集成测试的正确方式
@@ -44,6 +44,7 @@ def test_sls_handler_sends_logs_with_mocked_backend(mock_emit):
     
     # 使用 patch.dict 来临时设置环境变量
     with patch.dict(os.environ, sls_env_vars):
+        init_logging()  # 显式调用初始化
         logger = get_logger("sls_integration_logger")
         
         trace_id = "trace-for-sls-test"
