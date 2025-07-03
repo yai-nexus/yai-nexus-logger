@@ -22,7 +22,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-mock",
-  "ruff",
+  "ruff==0.12.1",
   "fastapi",
   "uvicorn[standard]",
   "httpx",
