@@ -1,16 +1,15 @@
 # src/yai_nexus_logger/logger_builder.py
 
 import logging
-import warnings
-from typing import List, Optional
+from typing import List
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import (
     get_console_handler,
     get_file_handler,
 )
-from .internal.internal_sls_handler import get_sls_handler, SLS_SDK_AVAILABLE
 from .internal.internal_settings import settings
+from .internal.internal_sls_handler import SLS_SDK_AVAILABLE, get_sls_handler
 from .uvicorn_support import configure_uvicorn_logging
 
 LOGGING_FORMAT = (

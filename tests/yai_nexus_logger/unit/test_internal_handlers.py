@@ -3,8 +3,6 @@
 import logging
 from pathlib import Path
 
-import pytest
-
 from yai_nexus_logger.internal.internal_handlers import (
     get_console_handler,
     get_file_handler,

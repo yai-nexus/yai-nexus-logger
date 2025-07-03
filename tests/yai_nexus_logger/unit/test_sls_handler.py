@@ -32,8 +32,8 @@ def clean_logging_environment():
 
 # 我们现在模拟 get_sls_handler，这是 get_logger 的直接依赖
 @pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
-@patch("yai_nexus_logger.internal.internal_handlers.LogClient")
-def test_get_logger_with_sls_handler(mock_log_client):
+@patch("yai_nexus_logger.internal.internal_sls_handler.LogClient")
+def test_get_sls_handler_creation(mock_log_client):
     """测试 get_sls_handler 函数是否能正确创建一个配置好的 SLS handler"""
     formatter = logging.Formatter()
     handler = get_sls_handler(

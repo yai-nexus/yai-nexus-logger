@@ -1,8 +1,7 @@
 """Unit tests for the yai_nexus_logger configuration and retrieval functions."""
 
 import logging
-import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,9 +9,7 @@ from yai_nexus_logger import (
     LoggerConfigurator,
     get_logger,
     init_logging,
-    trace_context,
 )
-from yai_nexus_logger.internal.internal_sls_handler import SLS_SDK_AVAILABLE
 
 
 def clean_logging_environment():

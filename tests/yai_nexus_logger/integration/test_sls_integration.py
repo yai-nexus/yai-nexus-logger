@@ -7,8 +7,10 @@ from unittest.mock import patch
 import pytest
 
 from yai_nexus_logger import get_logger
-from yai_nexus_logger.internal.internal_sls_handler import SLS_SDK_AVAILABLE
-from yai_nexus_logger.internal.internal_sls_handler import _shutdown_sls_handler
+from yai_nexus_logger.internal.internal_sls_handler import (
+    SLS_SDK_AVAILABLE,
+    _shutdown_sls_handler,
+)
 
 # 仅在安装了 SLS 依赖时运行此文件中的所有测试
 pytestmark = pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
