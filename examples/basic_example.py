@@ -4,7 +4,8 @@ yai-nexus-logger 基础使用示例
 本示例展示了如何以最简单的方式初始化和使用日志器。
 """
 
-from yai_nexus_logger import init_logging, get_logger
+from yai_nexus_logger import get_logger, init_logging
+
 
 def main():
     """主函数，演示基本日志记录。"""
@@ -26,6 +27,7 @@ def main():
     print("\n--- 记录带额外数据的日志 ---")
     logger.info("用户操作记录", extra={"user_id": "test_user", "action": "login"})
 
+
 if __name__ == "__main__":
     main()
-    print("\n✅ 基础示例运行完成！") 
+    print("\n✅ 基础示例运行完成！")

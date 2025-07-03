@@ -72,4 +72,4 @@ class Settings:
 
 
 # Create a single instance to be used throughout the application
-settings = Settings() 
+settings = Settings()

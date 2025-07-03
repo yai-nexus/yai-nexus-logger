@@ -1,12 +1,11 @@
 # src/yai_nexus_logger/internal/internal_handlers.py
 
 import logging
-import sys
-import time
 import socket
+import sys
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 # 全局变量，用于持有 SlsHandler 的实例，以便后续可以关闭它
 _sls_handler_instance: Optional[logging.Handler] = None
@@ -15,6 +14,7 @@ _sls_handler_instance: Optional[logging.Handler] = None
 try:
     from aliyun.log import LogClient, LogItem
     from aliyun.log.putlogsrequest import PutLogsRequest
+
     SLS_SDK_AVAILABLE = True
 except ImportError:
     SLS_SDK_AVAILABLE = False
@@ -54,6 +54,7 @@ class SLSLogHandler(logging.Handler):
     """
     一个自定义的 logging handler，用于将日志发送到阿里云 SLS 服务。
     """
+
     def __init__(
         self,
         endpoint: str,
@@ -156,7 +157,7 @@ def get_sls_handler(
         access_key_secret=access_key_secret,
         project=project,
         logstore=logstore,
-        topic=topic or app_name, # 如果 topic 未提供，使用 app_name
+        topic=topic or app_name,  # 如果 topic 未提供，使用 app_name
         source=source,
     )
     handler.setFormatter(formatter)
@@ -173,7 +174,8 @@ def _shutdown_sls_handler():
     if _sls_handler_instance:
         try:
             _sls_handler_instance.close()
-        except Exception:
-            pass
+        except Exception as e:
+            # 在关闭时遇到问题，只记录下来，不应抛出异常
+            logging.warning("Failed to close SLS handler: %s", e)
         finally:
             _sls_handler_instance = None

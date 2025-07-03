@@ -1,15 +1,14 @@
 # tests/yai_nexus_logger/unit/test_sls_handler.py
 
-from unittest.mock import MagicMock, patch
-import pytest
-import os
 import logging
+from unittest.mock import patch
 
-from yai_nexus_logger import get_logger
+import pytest
+
 from yai_nexus_logger.internal.internal_handlers import (
-    get_sls_handler,
-    SLSLogHandler,
     SLS_SDK_AVAILABLE,
+    SLSLogHandler,
+    get_sls_handler,
 )
 
 # 使用 pytest.mark.skipif 来在未安装 SLS 依赖时跳过这些测试

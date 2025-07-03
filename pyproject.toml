@@ -1,6 +1,6 @@
 [project]
 name = "yai-nexus-logger"
-version = "0.1.3"
+version = "0.2.0"
 authors = [
   { name="Harry", email="harrytang.next@gmail.com" },
 ]
@@ -22,7 +22,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-mock",
-  "ruff",
+  "ruff==0.12.1",
   "fastapi",
   "uvicorn[standard]",
   "httpx",
@@ -52,7 +52,8 @@ select = ["E", "F", "W", "I", "UP", "S"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]
+"tests/**/*.py" = ["S101", "S106", "E501"]
+"examples/**/*.py" = ["E501", "F841", "S104", "F811"]
 
 [tool.ruff.format]
 quote-style = "double"

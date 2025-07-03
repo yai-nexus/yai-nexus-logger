@@ -10,8 +10,10 @@ __version__ = "0.2.0"
 
 # 从 .configurator 模块导入 LoggerConfigurator 类
 from .configurator import LoggerConfigurator
+
 # 从 .core 模块导入核心函数
-from .core import init_logging, get_logger
+from .core import get_logger, init_logging
+
 # 从 .trace_context 模块导入 trace_context，用于追踪ID
 from .trace_context import trace_context
 
