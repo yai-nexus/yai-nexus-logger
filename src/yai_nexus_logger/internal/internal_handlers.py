@@ -1,56 +1,161 @@
-"""Internal log handlers for creating console and file handlers."""
+# src/yai_nexus_logger/internal/internal_handlers.py
 
 import logging
-import logging.handlers
 import sys
+import time
+import socket
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import Optional, List
+
+# 全局变量，用于持有 SlsHandler 的实例，以便后续可以关闭它
+_sls_handler_instance: Optional[logging.Handler] = None
+
+# 尝试导入 SLS 相关的库
+try:
+    from aliyun.log import LogClient, LogItem
+    from aliyun.log.putlogsrequest import PutLogsRequest
+    SLS_SDK_AVAILABLE = True
+except ImportError:
+    SLS_SDK_AVAILABLE = False
+
+
+def get_console_handler(formatter: logging.Formatter) -> logging.Handler:
+    """获取一个控制台输出的 handler"""
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    return handler
 
 
 def get_file_handler(
     formatter: logging.Formatter,
-    path: str = "logs/app.log",
-    when: str = "midnight",
-    interval: int = 1,
-    backup_count: int = 30,
+    path: str,
+    when: str,
+    interval: int,
+    backup_count: int,
 ) -> logging.Handler:
-    """
-    创建文件处理器，支持日志轮转。
+    """获取一个文件输出的 handler，支持日志分割"""
+    file_path = Path(path)
+    # 确保日志文件所在的目录存在
+    file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    Args:
-        formatter: 用于此处理器的日志格式化程序。
-        path (str): 日志文件路径。
-        when (str): 轮转时间单位 (e.g., 'midnight', 'h', 'd').
-        interval (int): 轮转间隔。
-        backup_count (int): 保留的备份文件数量。
-
-    Returns:
-        配置好的文件日志处理器。
-    """
-    log_path = Path(path)
-    # 在创建处理器之前，确保日志目录存在
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-
-    file_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=log_path,
+    handler = TimedRotatingFileHandler(
+        file_path,
         when=when,
         interval=interval,
         backupCount=backup_count,
         encoding="utf-8",
     )
-    file_handler.setFormatter(formatter)
-    return file_handler
+    handler.setFormatter(formatter)
+    return handler
 
 
-def get_console_handler(formatter: logging.Formatter) -> logging.Handler:
+class SLSLogHandler(logging.Handler):
     """
-    创建控制台处理器，将日志输出到 stdout。
-
-    Args:
-        formatter: 用于此处理器的日志格式化程序。
-
-    Returns:
-        配置好的控制台日志处理器。
+    一个自定义的 logging handler，用于将日志发送到阿里云 SLS 服务。
     """
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    return console_handler
+    def __init__(
+        self,
+        endpoint: str,
+        access_key_id: str,
+        access_key_secret: str,
+        project: str,
+        logstore: str,
+        topic: str = "",
+        source: str = "",
+    ):
+        super().__init__()
+        if not SLS_SDK_AVAILABLE:
+            raise ImportError("SLS dependencies are not installed.")
+        
+        self.project = project
+        self.logstore = logstore
+        self.topic = topic
+        # 如果 source 未提供，尝试获取本机IP作为来源
+        self.source = source if source else self._get_source_ip()
+        
+        self.client = LogClient(endpoint, access_key_id, access_key_secret)
+
+    def _get_source_ip(self) -> str:
+        """获取本地 IP 地址作为日志来源"""
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "unknown_source"
+
+    def emit(self, record: logging.LogRecord):
+        """
+        格式化并发送日志记录。
+        """
+        try:
+            log_item = LogItem(
+                timestamp=int(record.created),
+                contents=[("message", self.format(record))]
+            )
+            request = PutLogsRequest(
+                project=self.project,
+                logstore=self.logstore,
+                topic=self.topic,
+                source=self.source,
+                logitems=[log_item],
+            )
+            self.client.put_logs(request)
+        except Exception:
+            self.handleError(record)
+            
+    def close(self):
+        """
+        关闭 handler，这是一个空操作，因为 LogClient 不需要显式关闭。
+        """
+        super().close()
+
+
+def get_sls_handler(
+    formatter: logging.Formatter,
+    app_name: str,
+    endpoint: str,
+    access_key_id: str,
+    access_key_secret: str,
+    project: str,
+    logstore: str,
+    topic: Optional[str] = None,
+    source: Optional[str] = None,
+) -> logging.Handler:
+    """
+
+    获取一个阿里云SLS（日志服务）的 handler。
+    """
+    global _sls_handler_instance
+    if not SLS_SDK_AVAILABLE:
+        raise ImportError(
+            "aliyun-log-python-sdk is not installed. "
+            "Please run 'pip install yai-nexus-logger[sls]' to install it."
+        )
+
+    handler = SLSLogHandler(
+        endpoint=endpoint,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
+        project=project,
+        logstore=logstore,
+        topic=topic or app_name, # 如果 topic 未提供，使用 app_name
+        source=source,
+    )
+    handler.setFormatter(formatter)
+    
+    _sls_handler_instance = handler
+    return handler
+
+
+def _shutdown_sls_handler():
+    """
+    一个内部使用的函数，用于安全地关闭全局的 SlsHandler 实例。
+    """
+    global _sls_handler_instance
+    if _sls_handler_instance:
+        try:
+            _sls_handler_instance.close()
+        except Exception:
+            pass
+        finally:
+            _sls_handler_instance = None

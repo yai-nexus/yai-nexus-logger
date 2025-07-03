@@ -1,61 +1,64 @@
-"""Manages the trace context using contextvars for request tracing."""
+# src/yai_nexus_logger/trace_context.py
 
-import logging
 import uuid
 from contextvars import ContextVar, Token
+from typing import List, Optional
+
+# 使用 ContextVar 来存储 trace_id 堆栈，确保在异步代码中上下文安全
+# The context variable for storing the trace ID stack.
+_trace_id_context: ContextVar[List[str]] = ContextVar("trace_id_context", default=[])
 
 
 class TraceContext:
     """
-    一个用于管理 trace_id 上下文的类。
-    它封装了 ContextVar，并提供了用于设置、获取和重置 trace_id 的方法。
+    一个用于管理追踪ID（trace_id）的上下文管理器。
+    支持在同步和异步代码中安全地设置、获取和重置 trace_id。
     """
 
-    def __init__(self):
-        self._trace_id_context: ContextVar[str | None] = ContextVar(
-            "trace_id", default=None
-        )
+    def get_trace_id(self) -> str:
+        """
+        获取当前的 trace_id。
+        如果上下文中没有 trace_id，会自动生成一个新的 UUIDv4 并返回。
+        """
+        stack = _trace_id_context.get()
+        if not stack:
+            # 如果堆栈为空，生成一个新的 trace_id 并放入堆栈
+            new_id = str(uuid.uuid4())
+            stack.append(new_id)
+            _trace_id_context.set(stack)
+            return new_id
+        return stack[-1]
 
     def set_trace_id(self, trace_id: str) -> Token:
         """
-        设置当前请求的 trace_id 到 ContextVar 中。
+        设置一个新的 trace_id 到上下文堆栈中。
 
         Args:
-            trace_id: 要设置的 trace_id。
+            trace_id (str): 要设置的追踪ID。
 
         Returns:
-            一个 token 对象，可用于重置 context var。
+            Token: 一个令牌，可以用于之后调用 reset_trace_id 来恢复上下文。
         """
-        logging.debug("ContextVar set trace_id: %s", trace_id)
-        return self._trace_id_context.set(trace_id)
+        stack = _trace_id_context.get().copy()
+        stack.append(trace_id)
+        return _trace_id_context.set(stack)
 
-    def get_trace_id(self, create_if_missing: bool = True) -> str | None:
+    def reset_trace_id(self, token: Token):
         """
-        获取当前上下文的 trace_id。
-        如果 trace_id 不存在，则会根据 `create_if_missing` 的值决定是否创建。
+        使用 set_trace_id 返回的令牌来重置上下文。
 
         Args:
-            create_if_missing (bool): 如果为 True 且 trace_id 不存在，则创建新的。
-
-        Returns:
-            当前或新生成的 trace_id，或者 None。
+            token (Token): 从 set_trace_id 调用中获取的令牌。
         """
-        trace_id = self._trace_id_context.get()
-        if trace_id is None and create_if_missing:
-            trace_id = str(uuid.uuid4())
-            self.set_trace_id(trace_id)
-        logging.debug("ContextVar get trace_id: %s", trace_id)
-        return trace_id
+        _trace_id_context.reset(token)
 
-    def reset_trace_id(self, token: Token) -> None:
+    def clear(self):
         """
-        使用 token 重置 trace_id。
-
-        Args:
-            token: set_trace_id 返回的 token。
+        完全清空当前的 trace_id 上下文。
+        这在测试环境中尤其有用，可以确保不同测试用例之间的隔离。
         """
-        self._trace_id_context.reset(token)
+        _trace_id_context.set([])
 
 
-# 创建一个 TraceContext 的单例，供整个应用使用
+# 创建一个单例，供整个应用使用
 trace_context = TraceContext()
