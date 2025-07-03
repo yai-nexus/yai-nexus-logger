@@ -5,14 +5,17 @@ from unittest.mock import patch
 
 import pytest
 
-from yai_nexus_logger.internal.internal_handlers import (
+from yai_nexus_logger.internal.internal_formatter import InternalFormatter
+from yai_nexus_logger.internal.internal_sls_handler import (
     SLS_SDK_AVAILABLE,
     SLSLogHandler,
     get_sls_handler,
 )
 
-# 使用 pytest.mark.skipif 来在未安装 SLS 依赖时跳过这些测试
-pytestmark = pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
+# 如果没有安装 SLS SDK，则跳过此文件中的所有测试
+pytestmark = pytest.mark.skipif(
+    not SLS_SDK_AVAILABLE, reason="SLS SDK not installed"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -60,3 +63,50 @@ def test_get_logger_sls_import_error_graceful_fail():
             project="proj",
             logstore="log",
         )
+
+
+@pytest.mark.skipif(SLS_SDK_AVAILABLE, reason="SLS SDK is installed")
+@patch("yai_nexus_logger.internal.internal_sls_handler.SLS_SDK_AVAILABLE", False)
+def test_get_logger_with_sls_handler_sdk_unavailable():
+    """测试在没有安装SLS SDK时，尝试使用SLS handler会按预期抛出 ImportError。"""
+    with pytest.raises(ImportError, match="SLS dependencies are not installed"):
+        SLSLogHandler(
+            endpoint="fake_endpoint",
+            access_key_id="fake_id",
+            access_key_secret="fake_secret",
+            project="fake_project",
+            logstore="fake_logstore",
+        )
+
+
+@patch("yai_nexus_logger.internal.internal_sls_handler.LogClient")
+@patch("yai_nexus_logger.internal.internal_sls_handler.SLS_SDK_AVAILABLE", True)
+def test_get_logger_with_sls_handler(MockLogClient):
+    """测试 get_sls_handler 能否正确配置并返回一个有效的 handler 实例。"""
+    mock_client_instance = MockLogClient.return_value
+    formatter = InternalFormatter()
+
+    handler = get_sls_handler(
+        formatter=formatter,
+        app_name="sls_test_app",
+        endpoint="fake_endpoint",
+        access_key_id="fake_id",
+        access_key_secret="fake_secret",
+        project="fake_project",
+        logstore="fake_logstore",
+    )
+
+    assert isinstance(handler, SLSLogHandler)
+    assert handler.formatter == formatter
+    MockLogClient.assert_called_once_with(
+        "fake_endpoint", "fake_id", "fake_secret"
+    )
+
+    # 创建一个日志记录并发送
+    record = logging.LogRecord(
+        "test", logging.INFO, "test", 1, "test message", None, None
+    )
+    handler.emit(record)
+
+    # 验证 put_logs 是否被正确调用
+    mock_client_instance.put_logs.assert_called_once()
