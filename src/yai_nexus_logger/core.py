@@ -3,7 +3,7 @@ import warnings
 from typing import Optional
 
 from .configurator import LoggerConfigurator
-from .internal.settings import settings
+from .internal.internal_settings import settings
 
 
 def init_logging(builder: Optional[LoggerConfigurator] = None) -> None:
