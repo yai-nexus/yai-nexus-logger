@@ -25,7 +25,7 @@ class UvicornAccessFormatter(logging.Formatter):
         access_log = self.access_formatter.format(record)
 
         # Get trace_id from context
-        trace_id = trace_context.get_trace_id(create_if_missing=False)
+        trace_id = trace_context.get_trace_id()
         trace_id_str = f"[{trace_id}]" if trace_id else "[No-Trace-ID]"
 
         # Our final format

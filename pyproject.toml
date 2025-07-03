@@ -26,6 +26,10 @@ dev = [
   "fastapi",
   "uvicorn[standard]",
   "httpx",
+  "python-dotenv",
+]
+sls = [
+  "aliyun-log-python-sdk>=0.6.45",
 ]
 
 [tool.pytest.ini_options]
@@ -53,4 +57,4 @@ ignore = []
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
-line-ending = "auto" 
+line-ending = "auto"
