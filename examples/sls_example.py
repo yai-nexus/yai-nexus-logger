@@ -10,20 +10,17 @@
 """
 
 import logging
-import os
 import time
 import uuid
-from logging.handlers import TimedRotatingFileHandler
-
-from yai_nexus_logger import LoggerConfigurator, init_logging, get_logger, trace_context
 
 # 阿里云SLS配置信息 - 北京区域
 # 从环境变量或.env文件读取SLS配置
 from dotenv import load_dotenv
 
+from yai_nexus_logger import get_logger, init_logging, trace_context
+
 # 加载.env文件中的环境变量
 load_dotenv()
-
 
 
 def simple_sls_logging():
@@ -55,12 +52,12 @@ def sls_with_trace_id():
         logger.info("开始处理用户请求")
         logger.info("验证用户权限")
         logger.info("执行业务逻辑")
-        
+
         # 模拟一些处理...
         time.sleep(0.1)
-        
+
         logger.info("请求处理完成")
-        
+
     finally:
         # 清理trace_id
         trace_context.reset_trace_id(token)
@@ -93,13 +90,13 @@ def sls_with_multiple_handlers():
 
 
 if __name__ == "__main__":
-        try:
-            simple_sls_logging()
-            sls_with_trace_id()
-            sls_with_exception()
-            sls_with_multiple_handlers()
-            
-            print("\n✅ 所有示例运行完成！请登录阿里云日志服务控制台查看日志。")
-        finally:
-            # 确保所有日志都被发送
-            logging.shutdown() 
+    try:
+        simple_sls_logging()
+        sls_with_trace_id()
+        sls_with_exception()
+        sls_with_multiple_handlers()
+
+        print("\n✅ 所有示例运行完成！请登录阿里云日志服务控制台查看日志。")
+    finally:
+        # 确保所有日志都被发送
+        logging.shutdown()

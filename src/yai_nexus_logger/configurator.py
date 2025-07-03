@@ -1,21 +1,18 @@
 # src/yai_nexus_logger/logger_builder.py
 
 import logging
-import os
-import sys
-import threading
 import warnings
-from typing import List, Optional, Union
+from typing import List
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import (
+    SLS_SDK_AVAILABLE,
     get_console_handler,
     get_file_handler,
     get_sls_handler,
-    SLS_SDK_AVAILABLE,
 )
-from .uvicorn_support import configure_uvicorn_logging
 from .internal.internal_settings import settings
+from .uvicorn_support import configure_uvicorn_logging
 
 LOGGING_FORMAT = (
     "%(asctime)s.%(msecs)03d | %(levelname)-7s | "
@@ -100,7 +97,7 @@ class LoggerConfigurator:
 
         if logger.hasHandlers():
             logger.handlers.clear()
-        
+
         if not self._handlers:
             self._handlers.append(get_console_handler(self._formatter))
 

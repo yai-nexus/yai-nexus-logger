@@ -2,7 +2,7 @@
 
 import uuid
 from contextvars import ContextVar, Token
-from typing import List, Optional
+from typing import List
 
 # 使用 ContextVar 来存储 trace_id 堆栈，确保在异步代码中上下文安全
 # The context variable for storing the trace ID stack.

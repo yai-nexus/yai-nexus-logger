@@ -4,7 +4,6 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-from uvicorn.logging import AccessFormatter
 
 from yai_nexus_logger.trace_context import trace_context
 from yai_nexus_logger.uvicorn_support import (
@@ -118,4 +117,4 @@ def test_configure_uvicorn_logging(mock_getLogger):
     # Check propagation is set to False
     assert mock_uvicorn_access.propagate is False
     assert mock_uvicorn_error.propagate is False
-    assert mock_uvicorn_main.propagate is False 
+    assert mock_uvicorn_main.propagate is False

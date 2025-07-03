@@ -1,8 +1,11 @@
 # tests/yai_nexus_logger/unit/test_trace_context.py
 
 import uuid
+
 import pytest
+
 from yai_nexus_logger import trace_context
+
 
 # 这个 fixture 会在每个测试函数运行前自动执行
 @pytest.fixture(autouse=True)
@@ -11,6 +14,7 @@ def cleanup_trace_context():
     trace_context.clear()
     yield
     trace_context.clear()
+
 
 def test_get_trace_id_generates_uuid():
     """
@@ -25,6 +29,7 @@ def test_get_trace_id_generates_uuid():
     except ValueError:
         assert False, f"{trace_id} is not a valid UUID v4"
 
+
 def test_set_and_get_trace_id():
     """
     测试 set_trace_id 和 get_trace_id 是否能正确设置和获取 ID。
@@ -35,6 +40,7 @@ def test_set_and_get_trace_id():
     # 清理
     trace_context.reset_trace_id(token)
 
+
 def test_reset_trace_id():
     """
     测试 reset_trace_id 是否能正确重置上下文。
@@ -43,10 +49,10 @@ def test_reset_trace_id():
     token = trace_context.set_trace_id(custom_id)
     # 验证ID已设置
     assert trace_context.get_trace_id() == custom_id
-    
+
     # 重置
     trace_context.reset_trace_id(token)
-    
+
     # 重置后，获取到的ID应该是一个新生成的ID，而不是我们之前设置的
     new_id = trace_context.get_trace_id()
     assert new_id != custom_id
@@ -54,6 +60,7 @@ def test_reset_trace_id():
         uuid.UUID(new_id, version=4)
     except ValueError:
         assert False, f"After reset, expected a new UUID, but got {new_id}"
+
 
 def test_multiple_trace_ids_stacking():
     """
@@ -81,6 +88,7 @@ def test_multiple_trace_ids_stacking():
     except ValueError:
         assert False, f"After full reset, expected a new UUID, but got {new_id}"
 
+
 def test_clear_context():
     """
     测试 clear() 是否能清除所有 trace_id。
@@ -96,7 +104,7 @@ def test_clear_context():
     # 清除后，获取ID应该生成一个全新的UUID
     new_id = trace_context.get_trace_id()
     assert new_id != "id-to-be-cleared-2"
-    
+
     # 验证其是否为有效的 UUID v4
     try:
         uuid.UUID(new_id, version=4)

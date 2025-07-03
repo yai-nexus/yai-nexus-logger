@@ -1,12 +1,11 @@
 # src/yai_nexus_logger/internal/internal_handlers.py
 
 import logging
-import sys
-import time
 import socket
+import sys
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 # 全局变量，用于持有 SlsHandler 的实例，以便后续可以关闭它
 _sls_handler_instance: Optional[logging.Handler] = None
@@ -15,6 +14,7 @@ _sls_handler_instance: Optional[logging.Handler] = None
 try:
     from aliyun.log import LogClient, LogItem
     from aliyun.log.putlogsrequest import PutLogsRequest
+
     SLS_SDK_AVAILABLE = True
 except ImportError:
     SLS_SDK_AVAILABLE = False
@@ -54,6 +54,7 @@ class SLSLogHandler(logging.Handler):
     """
     一个自定义的 logging handler，用于将日志发送到阿里云 SLS 服务。
     """
+
     def __init__(
         self,
         endpoint: str,
@@ -67,13 +68,13 @@ class SLSLogHandler(logging.Handler):
         super().__init__()
         if not SLS_SDK_AVAILABLE:
             raise ImportError("SLS dependencies are not installed.")
-        
+
         self.project = project
         self.logstore = logstore
         self.topic = topic
         # 如果 source 未提供，尝试获取本机IP作为来源
         self.source = source if source else self._get_source_ip()
-        
+
         self.client = LogClient(endpoint, access_key_id, access_key_secret)
 
     def _get_source_ip(self) -> str:
@@ -90,7 +91,7 @@ class SLSLogHandler(logging.Handler):
         try:
             log_item = LogItem(
                 timestamp=int(record.created),
-                contents=[("message", self.format(record))]
+                contents=[("message", self.format(record))],
             )
             request = PutLogsRequest(
                 project=self.project,
@@ -102,7 +103,7 @@ class SLSLogHandler(logging.Handler):
             self.client.put_logs(request)
         except Exception:
             self.handleError(record)
-            
+
     def close(self):
         """
         关闭 handler，这是一个空操作，因为 LogClient 不需要显式关闭。
@@ -138,11 +139,11 @@ def get_sls_handler(
         access_key_secret=access_key_secret,
         project=project,
         logstore=logstore,
-        topic=topic or app_name, # 如果 topic 未提供，使用 app_name
+        topic=topic or app_name,  # 如果 topic 未提供，使用 app_name
         source=source,
     )
     handler.setFormatter(formatter)
-    
+
     _sls_handler_instance = handler
     return handler
 
@@ -155,7 +156,8 @@ def _shutdown_sls_handler():
     if _sls_handler_instance:
         try:
             _sls_handler_instance.close()
-        except Exception:
-            pass
+        except Exception as e:
+            # 在关闭时遇到问题，只记录下来，不应抛出异常
+            logging.warning("Failed to close SLS handler: %s", e)
         finally:
             _sls_handler_instance = None

@@ -1,8 +1,8 @@
 """Provides support for integrating the logger with Uvicorn's logging system."""
+
 import logging
 from typing import List
 
-import uvicorn.logging
 from uvicorn.logging import AccessFormatter
 
 from yai_nexus_logger.trace_context import trace_context

@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # 导入新的 get_logger 方法
-from yai_nexus_logger import get_logger, trace_context, init_logging
+from yai_nexus_logger import get_logger, init_logging, trace_context
 from yai_nexus_logger.internal.internal_handlers import (
     _shutdown_sls_handler,  # 导入内部关闭函数
 )
@@ -24,13 +24,13 @@ def setup_and_teardown_log_file():
     # 清理可能存在的旧文件
     if LOG_FILE.exists():
         LOG_FILE.unlink()
-    
+
     yield
-    
+
     # 清理所有 handler，确保文件句柄被释放
     _shutdown_sls_handler()
     logging.shutdown()
-    
+
     # 测试结束后删除日志文件
     if LOG_FILE.exists():
         LOG_FILE.unlink()

@@ -1,28 +1,31 @@
 """An example of using yai-nexus-logger with a FastAPI application."""
 
-from time import time
+import uuid
 from typing import Callable
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from starlette.requests import Request
-import logging
-import uuid
 
 # 从我们的库中导入
 from yai_nexus_logger import (
-    trace_context,
-    init_logging,
-    get_logger,
     LoggerConfigurator,
+    get_logger,
+    init_logging,
+    trace_context,
 )
+
 
 # --- 应用设置 ---
 # 将日志配置和应用创建封装到函数中，以避免在导入时执行
 def create_app() -> FastAPI:
     # 在应用启动时配置日志
     # 可以通过环境变量或代码进行配置
-    configurator = LoggerConfigurator(level="DEBUG").with_console_handler().with_uvicorn_integration()
+    configurator = (
+        LoggerConfigurator(level="DEBUG")
+        .with_console_handler()
+        .with_uvicorn_integration()
+    )
     init_logging(configurator)
 
     logger = get_logger(__name__)
@@ -71,8 +74,9 @@ def create_app() -> FastAPI:
         except ZeroDivisionError:
             logger.exception("An error occurred: Division by zero.")
         return {"message": "An error was logged."}
-    
+
     return app
+
 
 if __name__ == "__main__":
     # 在 __main__ 块中创建和运行 app

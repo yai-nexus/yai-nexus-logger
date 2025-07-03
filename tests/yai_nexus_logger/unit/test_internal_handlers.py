@@ -5,11 +5,12 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from yai_nexus_logger.internal.internal_handlers import (
+    SLS_SDK_AVAILABLE,  # 导入我们新的可用性标志
     get_console_handler,
     get_file_handler,
     get_sls_handler,
-    SLS_SDK_AVAILABLE,  # 导入我们新的可用性标志
 )
 
 
@@ -56,7 +57,7 @@ def test_get_sls_handler_initialization(MockSLSLogHandler, mock_formatter):
     """
     # 模拟我们自定义 Handler 的返回实例
     mock_handler_instance = MockSLSLogHandler.return_value
-    mock_handler_instance.setFormatter = MagicMock() # 模拟 setFormatter 方法
+    mock_handler_instance.setFormatter = MagicMock()  # 模拟 setFormatter 方法
 
     handler = get_sls_handler(
         formatter=mock_formatter,
@@ -66,7 +67,7 @@ def test_get_sls_handler_initialization(MockSLSLogHandler, mock_formatter):
         access_key_secret="fake_secret",
         project="fake_project",
         logstore="fake_logstore",
-        topic="custom_topic", # 增加一个自定义 topic
+        topic="custom_topic",  # 增加一个自定义 topic
     )
 
     # 验证 SLSLogHandler 是否用正确的参数被初始化
@@ -76,10 +77,10 @@ def test_get_sls_handler_initialization(MockSLSLogHandler, mock_formatter):
         access_key_secret="fake_secret",
         project="fake_project",
         logstore="fake_logstore",
-        topic="custom_topic", # 确认 topic 参数被正确传递
+        topic="custom_topic",  # 确认 topic 参数被正确传递
         source=None,
     )
-    
+
     # 验证 setFormatter 方法被调用
     mock_handler_instance.setFormatter.assert_called_once_with(mock_formatter)
 
