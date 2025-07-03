@@ -1,8 +1,11 @@
 """A fluent builder for creating and configuring logger instances."""
+
 import logging
+from typing import List
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import get_console_handler, get_file_handler
+from .uvicorn_support import configure_uvicorn_logging
 
 LOGGING_FORMAT = (
     "%(asctime)s.%(msecs)03d | %(levelname)-7s | "
@@ -16,21 +19,15 @@ class LoggerBuilder:
     """
 
     def __init__(self, name: str, level: str = "INFO"):
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level.upper())
-        self.formatter = InternalFormatter(LOGGING_FORMAT)
-
-        # 清除现有处理器，以确保配置是干净的
-        if self.logger.hasHandlers():
-            self.logger.handlers.clear()
-
-        # 防止日志向上传递给 root logger
-        self.logger.propagate = False
+        self._name = name
+        self._level = level.upper()
+        self._handlers: List[logging.Handler] = []
+        self._formatter = InternalFormatter(LOGGING_FORMAT)
+        self._uvicorn_integration = False
 
     def with_console_handler(self) -> "LoggerBuilder":
         """添加一个控制台处理器。"""
-        handler = get_console_handler(self.formatter)
-        self.logger.addHandler(handler)
+        self._handlers.append(get_console_handler(self._formatter))
         return self
 
     def with_file_handler(
@@ -41,17 +38,45 @@ class LoggerBuilder:
         backup_count: int = 30,
     ) -> "LoggerBuilder":
         """添加一个文件处理器。"""
-        handler = get_file_handler(
-            self.formatter, path, when, interval, backup_count
+        self._handlers.append(
+            get_file_handler(
+                formatter=self._formatter,
+                path=path,
+                when=when,
+                interval=interval,
+                backup_count=backup_count,
+            )
         )
-        self.logger.addHandler(handler)
+        return self
+
+    def with_uvicorn_integration(self) -> "LoggerBuilder":
+        """
+        Enables integration with Uvicorn, redirecting its logs to our handlers.
+        """
+        self._uvicorn_integration = True
         return self
 
     def build(self) -> logging.Logger:
         """
         构建并返回最终的 logger 实例。
         """
-        if not self.logger.handlers:
-            # 如果没有配置任何 handler，默认添加控制台输出
-            self.with_console_handler()
-        return self.logger
+        logger = logging.getLogger(self._name)
+        logger.setLevel(self._level)
+        logger.propagate = False
+
+        # Clear existing handlers to prevent duplicate logs
+        if logger.hasHandlers():
+            logger.handlers.clear()
+
+        # If no handlers were added, add a default console handler
+        if not self._handlers:
+            self._handlers.append(get_console_handler(self._formatter))
+
+        for handler in self._handlers:
+            logger.addHandler(handler)
+
+        # If Uvicorn integration is enabled, configure its loggers
+        if self._uvicorn_integration:
+            configure_uvicorn_logging(handlers=self._handlers, level=self._level)
+
+        return logger

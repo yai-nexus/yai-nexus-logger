@@ -1,4 +1,5 @@
 """An example of using yai-nexus-logger with a FastAPI application."""
+
 from time import time
 from typing import Callable
 
@@ -8,15 +9,16 @@ from fastapi import FastAPI, Request, Response
 # 从我们的库中导入
 from yai_nexus_logger import (
     LoggerBuilder,
-    get_default_uvicorn_log_config,
     trace_context,
 )
 
 # 1. 使用 LoggerBuilder 初始化 logger
+#    通过 .with_uvicorn_integration() 自动接管 uvicorn 日志
 logger = (
     LoggerBuilder(name="my-fastapi-app", level="DEBUG")
     .with_console_handler()
     .with_file_handler()
+    .with_uvicorn_integration()
     .build()
 )
 
@@ -33,12 +35,12 @@ async def logging_middleware(request: Request, call_next: Callable) -> Response:
     """
     # 尝试从请求头获取 trace_id，如果没有则 get_trace_id() 会自动生成一个新的
     trace_id = request.headers.get("X-Trace-ID") or trace_context.get_trace_id()
-    
+
     # set_trace_id 会返回一个 token，用于稍后重置 context
     token = trace_context.set_trace_id(trace_id)
-    
+
     start_time = time()
-    
+
     try:
         response = await call_next(request)
         response.headers["X-Trace-ID"] = trace_context.get_trace_id()
@@ -67,7 +69,7 @@ async def logging_middleware(request: Request, call_next: Callable) -> Response:
 async def read_root():
     """一个简单的根路径，演示日志记录。"""
     logger.info("Handling request for the root endpoint.")
-    
+
     # 模拟一些业务逻辑
     try:
         result = 1 / 1
@@ -92,15 +94,11 @@ async def trigger_error():
 
 
 if __name__ == "__main__":
-    # 3. 使用我们的 uvicorn 配置
-    # 这会将 uvicorn 的访问日志也格式化并输出到我们配置的文件和控制台
-    log_config = get_default_uvicorn_log_config(level="INFO")
-    
     # 启动 uvicorn 服务器
+    # logger 会自动处理 uvicorn 的日志，所以不再需要 log_config
     uvicorn.run(
         "fastapi_example:app",
         host="127.0.0.1",
         port=8000,
         reload=True,
-        log_config=log_config,
-    ) 
+    )

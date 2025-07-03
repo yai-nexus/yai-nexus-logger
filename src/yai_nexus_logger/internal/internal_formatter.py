@@ -1,4 +1,5 @@
 """Internal formatter for the logger, handles trace_id and log record formatting."""
+
 import logging
 
 from yai_nexus_logger.trace_context import trace_context
@@ -27,13 +28,10 @@ class InternalFormatter(logging.Formatter):
         # 如果路径少于4段，则不缩写
         if len(parts) <= 3:
             return module_name
-        
-        # 缩写前几个部分，保留最后一部分
-        abbreviated_parts = [
-            p[0] if p.isalpha() else p for p in parts[:-1]
-        ]
-        return ".".join(abbreviated_parts) + "." + parts[-1]
 
+        # 缩写前几个部分，保留最后一部分
+        abbreviated_parts = [p[0] if p.isalpha() else p for p in parts[:-1]]
+        return ".".join(abbreviated_parts) + "." + parts[-1]
 
     def format(self, record: logging.LogRecord) -> str:
         # 注入 trace_id
@@ -45,5 +43,5 @@ class InternalFormatter(logging.Formatter):
         # 为错误日志添加堆栈信息
         if record.levelno >= logging.ERROR and record.exc_info:
             record.exc_text = self.formatException(record.exc_info)
-        
-        return super().format(record) 
+
+        return super().format(record)

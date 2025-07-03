@@ -1,4 +1,5 @@
 """Internal log handlers for creating console and file handlers."""
+
 import logging
 import logging.handlers
 import sys
@@ -52,4 +53,4 @@ def get_console_handler(formatter: logging.Formatter) -> logging.Handler:
     """
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
-    return console_handler 
+    return console_handler
