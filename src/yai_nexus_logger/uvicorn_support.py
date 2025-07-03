@@ -1,3 +1,4 @@
+"""Provides support for integrating the logger with Uvicorn's logging system."""
 from typing import Any, Dict
 
 
@@ -23,7 +24,10 @@ def get_default_uvicorn_log_config(level: str = "INFO") -> Dict[str, Any]:
             },
             "access": {
                 "()": "uvicorn.logging.AccessFormatter",
-                "fmt": '%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s | %(client_addr)s - "%(request_line)s" %(status_code)s',
+                "fmt": (
+                    '%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s | '
+                    '%(client_addr)s - "%(request_line)s" %(status_code)s'
+                ),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },

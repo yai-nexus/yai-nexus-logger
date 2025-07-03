@@ -1,5 +1,5 @@
+"""A fluent builder for creating and configuring logger instances."""
 import logging
-from typing import Any
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import get_console_handler, get_file_handler
@@ -54,5 +54,4 @@ class LoggerBuilder:
         if not self.logger.handlers:
             # 如果没有配置任何 handler，默认添加控制台输出
             self.with_console_handler()
-            
         return self.logger

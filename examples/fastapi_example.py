@@ -1,4 +1,4 @@
-import logging
+"""An example of using yai-nexus-logger with a FastAPI application."""
 from time import time
 from typing import Callable
 
@@ -51,7 +51,11 @@ async def logging_middleware(request: Request, call_next: Callable) -> Response:
     finally:
         process_time = (time() - start_time) * 1000
         logger.info(
-            f'"{request.method} {request.url.path}" {status_code} {process_time:.2f}ms'
+            '"%s %s" %s %.2fms',
+            request.method,
+            request.url.path,
+            status_code,
+            process_time,
         )
         # 请求结束时重置 trace_id，清理上下文
         trace_context.reset_trace_id(token)
@@ -67,7 +71,7 @@ async def read_root():
     # 模拟一些业务逻辑
     try:
         result = 1 / 1
-        logger.debug(f"Successful division operation, result: {result}")
+        logger.debug("Successful division operation, result: %s", result)
     except ZeroDivisionError:
         logger.error("Attempted to divide by zero!", exc_info=True)
 
@@ -94,7 +98,7 @@ if __name__ == "__main__":
     
     # 启动 uvicorn 服务器
     uvicorn.run(
-        "fastapi_app:app",
+        "fastapi_example:app",
         host="127.0.0.1",
         port=8000,
         reload=True,

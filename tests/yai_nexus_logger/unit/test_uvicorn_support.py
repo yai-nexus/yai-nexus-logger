@@ -1,3 +1,4 @@
+"""Unit tests for the Uvicorn support module."""
 import pytest
 from yai_nexus_logger.uvicorn_support import get_default_uvicorn_log_config
 

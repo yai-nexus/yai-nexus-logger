@@ -1,6 +1,4 @@
-import logging
-import json
-from pathlib import Path
+"""Integration tests for the logger."""
 from yai_nexus_logger.logger_builder import LoggerBuilder
 from yai_nexus_logger.trace_context import trace_context
 
@@ -38,7 +36,7 @@ def test_logger_integration_with_console_and_file(tmp_path, capsys):
 
     # 5. Check file output
     assert log_file_path.exists()
-    with open(log_file_path, 'r') as f:
+    with open(log_file_path, 'r', encoding="utf-8") as f:
         file_content = f.read().strip()
 
     # Verify file content

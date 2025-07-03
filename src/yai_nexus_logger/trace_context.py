@@ -1,3 +1,4 @@
+"""Manages the trace context using contextvars for request tracing."""
 from contextvars import ContextVar, Token
 import logging
 import uuid
@@ -24,7 +25,7 @@ class TraceContext:
         Returns:
             一个 token 对象，可用于重置 context var。
         """
-        logging.debug(f"ContextVar set trace_id: {trace_id}")
+        logging.debug("ContextVar set trace_id: %s", trace_id)
         return self._trace_id_context.set(trace_id)
 
     def get_trace_id(self) -> str:
@@ -39,7 +40,7 @@ class TraceContext:
         if trace_id is None:
             trace_id = str(uuid.uuid4())
             self.set_trace_id(trace_id)
-        logging.debug(f"ContextVar get trace_id: {trace_id}")
+        logging.debug("ContextVar get trace_id: %s", trace_id)
         return trace_id
 
     def reset_trace_id(self, token: Token) -> None:

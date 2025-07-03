@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+"""Tests for the FastAPI example application."""
 from fastapi.testclient import TestClient
 
-from examples.fastapi_example import app as real_app, logging_middleware
+from examples.fastapi_example import app as real_app
 
 # 使用 TestClient 来测试我们的 FastAPI 应用
 client = TestClient(real_app)

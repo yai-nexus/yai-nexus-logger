@@ -1,10 +1,8 @@
+"""Internal log handlers for creating console and file handlers."""
 import logging
 import logging.handlers
 import sys
 from pathlib import Path
-
-LOG_DIR = Path("logs")
-# LOG_DIR.mkdir(exist_ok=True) # <-- 移动这行代码
 
 
 def get_file_handler(

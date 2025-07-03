@@ -1,7 +1,7 @@
+"""Internal formatter for the logger, handles trace_id and log record formatting."""
 import logging
-import traceback
 
-from ..trace_context import trace_context
+from yai_nexus_logger.trace_context import trace_context
 
 
 class InternalFormatter(logging.Formatter):
