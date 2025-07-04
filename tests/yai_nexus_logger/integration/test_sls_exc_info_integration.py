@@ -3,7 +3,6 @@ SLS Handler exc_info 和消息格式化的集成测试
 """
 
 import logging
-import pytest
 from unittest.mock import Mock, patch
 
 from yai_nexus_logger import get_logger, init_logging, trace_context
@@ -33,7 +32,7 @@ class TestSLSExcInfoIntegration:
     })
     def test_logger_with_exc_info_and_formatting_integration(self):
         """测试通过 logger 接口使用 exc_info 和消息格式化"""
-        
+
         # 模拟 SLS 客户端
         with patch('yai_nexus_logger.internal.internal_sls_handler.LogClient') as mock_log_client_class:
             mock_client = Mock()
@@ -42,7 +41,7 @@ class TestSLSExcInfoIntegration:
             # 强制清理已存在的 handlers，确保重新初始化
             app_logger = logging.getLogger("app")
             app_logger.handlers.clear()
-            
+
             # 模拟 hasHandlers 返回 False，强制重新初始化
             with patch.object(app_logger, 'hasHandlers', return_value=False):
                 # 初始化日志系统
@@ -58,7 +57,7 @@ class TestSLSExcInfoIntegration:
                         raise ValueError("测试异常消息")
                     except ValueError:
                         logger.error(
-                            "业务操作失败: user_id=%s, operation=%s, amount=%.2f", 
+                            "业务操作失败: user_id=%s, operation=%s, amount=%.2f",
                             "user123", "payment", 100.50,
                             exc_info=True
                         )
@@ -95,7 +94,7 @@ class TestSLSExcInfoIntegration:
     })
     def test_multiple_log_calls_with_different_formatting(self):
         """测试多次日志调用使用不同的消息格式化"""
-        
+
         # 模拟 SLS 客户端
         with patch('yai_nexus_logger.internal.internal_sls_handler.LogClient') as mock_log_client_class:
             mock_client = Mock()
@@ -104,7 +103,7 @@ class TestSLSExcInfoIntegration:
             # 强制清理已存在的 handlers，确保重新初始化
             app_logger = logging.getLogger("app")
             app_logger.handlers.clear()
-            
+
             # 模拟 hasHandlers 返回 False，强制重新初始化
             with patch.object(app_logger, 'hasHandlers', return_value=False):
                 # 初始化日志系统
@@ -112,11 +111,11 @@ class TestSLSExcInfoIntegration:
                 logger = get_logger(__name__)
 
                 # 第一次调用：用户登录
-                logger.info("用户登录成功: user_id=%s, ip=%s, user_agent=%s", 
+                logger.info("用户登录成功: user_id=%s, ip=%s, user_agent=%s",
                            "user123", "192.168.1.100", "Chrome/91.0")
 
                 # 第二次调用：系统监控
-                logger.warning("系统资源警告: cpu_usage=%.1f%%, memory_usage=%.1f%%, component=%s", 
+                logger.warning("系统资源警告: cpu_usage=%.1f%%, memory_usage=%.1f%%, component=%s",
                               85.2, 78.5, "web_server")
 
                 # 验证两次调用都成功
@@ -125,14 +124,14 @@ class TestSLSExcInfoIntegration:
                 # 验证第一次调用
                 first_call_args = mock_client.put_logs.call_args_list[0][0][0]
                 first_contents = dict(first_call_args.logitems[0].contents)
-                
+
                 expected_first_message = "用户登录成功: user_id=user123, ip=192.168.1.100, user_agent=Chrome/91.0"
                 assert first_contents["message"] == expected_first_message
 
                 # 验证第二次调用
                 second_call_args = mock_client.put_logs.call_args_list[1][0][0]
                 second_contents = dict(second_call_args.logitems[0].contents)
-                
+
                 expected_second_message = "系统资源警告: cpu_usage=85.2%, memory_usage=78.5%, component=web_server"
                 assert second_contents["message"] == expected_second_message
 
@@ -143,4 +142,4 @@ class TestSLSExcInfoIntegration:
             logger = logging.getLogger(name)
             if logger.hasHandlers():
                 logger.handlers.clear()
-                logger.propagate = True 
+                logger.propagate = True

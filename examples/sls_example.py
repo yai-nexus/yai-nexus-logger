@@ -88,7 +88,7 @@ def sls_with_multiple_handlers():
 if __name__ == "__main__":
     # 在应用开始时初始化一次日志系统
     init_logging()
-    
+
     try:
         simple_sls_logging()
         sls_with_trace_id()

@@ -61,7 +61,7 @@ class SLSLogHandler(logging.Handler):
             # 直接从 trace_context 获取 trace_id
             from ..trace_context import trace_context
             current_trace_id = trace_context.get_trace_id() or ""
-            
+
             # 基础字段
             contents = [
                 ("message", record.getMessage()),  # 使用 getMessage() 获取格式化后的消息
@@ -76,15 +76,15 @@ class SLSLogHandler(logging.Handler):
             ]
 
             # 处理异常信息
-            if record.exc_info and record.exc_info != True:
+            if record.exc_info and not record.exc_info:
                 # 当 exc_info 是一个异常元组时，直接格式化
                 import traceback as tb
                 exc_text = ''.join(tb.format_exception(*record.exc_info))
                 contents.append(("exception", exc_text))
             elif record.exc_info is True:
                 # 当 exc_info=True 时，使用当前异常信息
-                import traceback as tb
                 import sys
+                import traceback as tb
                 exc_text = ''.join(tb.format_exception(*sys.exc_info()))
                 contents.append(("exception", exc_text))
 
@@ -106,19 +106,19 @@ class SLSLogHandler(logging.Handler):
     def _handle_emit_error(self, exception: Exception, record: logging.LogRecord):
         """
         处理日志发送到 SLS 时发生的异常。
-        
+
         不再静默忽略异常，而是将详细的错误信息输出到 stderr，
         确保即使远程日志发送失败，日志信息也不会丢失。
         """
         error_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        
+
         # 构建原始日志记录的关键信息
         original_log_info = (
             f"[{record.levelname}] {record.name}:{record.lineno} | "
             f"{getattr(record, 'trace_id', 'NO_TRACE')} | "
             f"{record.getMessage()}"
         )
-        
+
         # 输出详细的错误信息到 stderr
         error_message = f"""
 ═══ SLS 日志发送失败 [{error_time}] ═══
@@ -130,7 +130,7 @@ SLS 配置: project={self.project}, logstore={self.logstore}, topic={self.topic}
 {traceback.format_exc()}
 ════════════════════════════════════════════════
 """
-        
+
         # 输出到 stderr，确保信息不会丢失
         print(error_message, file=sys.stderr, flush=True)
 
