@@ -1,12 +1,12 @@
 [project]
 name = "yai-nexus-logger"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
   { name="Harry", email="harrytang.next@gmail.com" },
 ]
 description = "A powerful, structured logger for modern Python applications, with built-in trace_id support for easy request tracking."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
