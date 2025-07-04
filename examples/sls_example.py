@@ -26,7 +26,6 @@ load_dotenv()
 def simple_sls_logging():
     """演示基本的 SLS 日志记录功能。"""
     print("\n--- 演示: 基本 SLS 日志 ---")
-    init_logging()
     logger = get_logger()
 
     # 记录不同级别的日志
@@ -41,7 +40,6 @@ def simple_sls_logging():
 def sls_with_trace_id():
     """演示如何结合 trace_id 进行日志记录，这对于分布式系统追踪至关重要。"""
     print("\n--- 演示: 带 trace_id 的 SLS 日志 ---")
-    init_logging()
     logger = get_logger()
 
     # 模拟一个请求的处理过程
@@ -66,7 +64,6 @@ def sls_with_trace_id():
 def sls_with_exception():
     """演示如何在捕获异常时记录日志，包括堆栈信息。"""
     print("\n--- 演示: 记录异常信息到 SLS ---")
-    init_logging()
     logger = get_logger()
 
     try:
@@ -81,7 +78,6 @@ def sls_with_exception():
 def sls_with_multiple_handlers():
     """演示如何同时将日志发送到 SLS、控制台和文件。"""
     print("\n--- 演示: 多 Handler (SLS, Console, File) ---")
-    init_logging()
     logger = get_logger()
 
     logger.debug("这条日志会同时出现在控制台、文件和阿里云SLS中")
@@ -90,6 +86,9 @@ def sls_with_multiple_handlers():
 
 
 if __name__ == "__main__":
+    # 在应用开始时初始化一次日志系统
+    init_logging()
+    
     try:
         simple_sls_logging()
         sls_with_trace_id()

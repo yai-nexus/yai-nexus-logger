@@ -1,6 +1,9 @@
 import atexit
 import logging
 import socket
+import sys
+import traceback
+from datetime import datetime
 from typing import Optional
 
 # 全局变量，用于持有 SlsHandler 的实例，以便后续可以关闭它
@@ -52,12 +55,24 @@ class SLSLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         """
-        格式化并发送日志记录。
+        发送日志记录到 SLS，将 LogRecord 的关键字段作为独立的内容字段。
         """
         try:
+            contents = [
+                ("message", record.msg),
+                ("level", record.levelname),
+                ("logger", record.name),
+                ("module", record.module),
+                ("function", record.funcName),
+                ("line", str(record.lineno)),
+                ("process_id", str(record.process)),
+                ("thread_id", str(record.thread)),
+                ("trace_id", getattr(record, "trace_id", "")),
+            ]
+
             log_item = LogItem(
                 timestamp=int(record.created),
-                contents=[("message", self.format(record))],
+                contents=contents,
             )
             request = PutLogsRequest(
                 project=self.project,
@@ -67,8 +82,39 @@ class SLSLogHandler(logging.Handler):
                 logitems=[log_item],
             )
             self.client.put_logs(request)
-        except Exception:
-            self.handleError(record)
+        except Exception as e:
+            self._handle_emit_error(e, record)
+
+    def _handle_emit_error(self, exception: Exception, record: logging.LogRecord):
+        """
+        处理日志发送到 SLS 时发生的异常。
+        
+        不再静默忽略异常，而是将详细的错误信息输出到 stderr，
+        确保即使远程日志发送失败，日志信息也不会丢失。
+        """
+        error_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        
+        # 构建原始日志记录的关键信息
+        original_log_info = (
+            f"[{record.levelname}] {record.name}:{record.lineno} | "
+            f"{getattr(record, 'trace_id', 'NO_TRACE')} | "
+            f"{record.getMessage()}"
+        )
+        
+        # 输出详细的错误信息到 stderr
+        error_message = f"""
+═══ SLS 日志发送失败 [{error_time}] ═══
+异常类型: {type(exception).__name__}
+异常信息: {str(exception)}
+SLS 配置: project={self.project}, logstore={self.logstore}, topic={self.topic}
+原始日志: {original_log_info}
+堆栈跟踪:
+{traceback.format_exc()}
+════════════════════════════════════════════════
+"""
+        
+        # 输出到 stderr，确保信息不会丢失
+        print(error_message, file=sys.stderr, flush=True)
 
     def close(self):
         """
