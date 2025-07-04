@@ -1,5 +1,5 @@
 """
-测试 SLS Handler 处理 exc_info 和 extra 参数的功能
+测试 SLS Handler 处理 exc_info 和消息格式化的功能
 """
 
 import logging
@@ -9,8 +9,8 @@ from unittest.mock import Mock, patch
 from yai_nexus_logger.internal.internal_sls_handler import SLSLogHandler
 
 
-class TestSLSHandlerExcInfoAndExtra:
-    """测试 SLS Handler 的 exc_info 和 extra 参数处理"""
+class TestSLSHandlerExcInfoAndFormatting:
+    """测试 SLS Handler 的 exc_info 和消息格式化处理"""
 
     def setup_method(self):
         """每个测试前的设置"""
@@ -61,129 +61,15 @@ class TestSLSHandlerExcInfoAndExtra:
             assert "ZeroDivisionError" in contents_dict["exception"]
             assert "Traceback" in contents_dict["exception"]
 
-    def test_extra_fields_are_included(self):
-        """测试额外字段是否被正确包含"""
-        record = logging.LogRecord(
-            name="test",
-            level=logging.INFO,
-            pathname="test.py",
-            lineno=10,
-            msg="Test with extra fields",
-            args=(),
-            exc_info=None
-        )
-        
-        # 添加额外字段
-        record.user_id = "12345"
-        record.action = "login"
-        record.ip_address = "192.168.1.1"
-        
-        # 发送日志
-        self.handler.emit(record)
-        
-        # 验证 put_logs 被调用
-        assert self.mock_client.put_logs.called
-        
-        # 获取发送的数据
-        call_args = self.mock_client.put_logs.call_args[0][0]
-        log_item = call_args.logitems[0]
-        
-        # 验证 contents 中包含额外字段
-        contents_dict = dict(log_item.contents)
-        assert "extra_user_id" in contents_dict
-        assert contents_dict["extra_user_id"] == "12345"
-        assert "extra_action" in contents_dict
-        assert contents_dict["extra_action"] == "login"
-        assert "extra_ip_address" in contents_dict
-        assert contents_dict["extra_ip_address"] == "192.168.1.1"
-
-    def test_both_exc_info_and_extra(self):
-        """测试同时包含异常信息和额外字段"""
-        try:
-            raise ValueError("Test exception")
-        except ValueError:
-            import sys
-            record = logging.LogRecord(
-                name="test",
-                level=logging.ERROR,
-                pathname="test.py",
-                lineno=10,
-                msg="Test with both exception and extra",
-                args=(),
-                exc_info=sys.exc_info()
-            )
-            
-            # 添加额外字段
-            record.operation = "test_operation"
-            record.user_id = "test_user"
-            
-            # 发送日志
-            self.handler.emit(record)
-            
-            # 验证 put_logs 被调用
-            assert self.mock_client.put_logs.called
-            
-            # 获取发送的数据
-            call_args = self.mock_client.put_logs.call_args[0][0]
-            log_item = call_args.logitems[0]
-            
-            # 验证 contents 中包含异常信息和额外字段
-            contents_dict = dict(log_item.contents)
-            
-            # 检查异常信息
-            assert "exception" in contents_dict
-            assert "ValueError" in contents_dict["exception"]
-            assert "Test exception" in contents_dict["exception"]
-            
-            # 检查额外字段
-            assert "extra_operation" in contents_dict
-            assert contents_dict["extra_operation"] == "test_operation"
-            assert "extra_user_id" in contents_dict
-            assert contents_dict["extra_user_id"] == "test_user"
-
-    def test_standard_fields_not_duplicated(self):
-        """测试标准字段不会作为 extra 字段重复"""
-        record = logging.LogRecord(
-            name="test",
-            level=logging.INFO,
-            pathname="test.py",
-            lineno=10,
-            msg="Test standard fields",
-            args=(),
-            exc_info=None
-        )
-        
-        # 这些是标准字段，不应该作为 extra 字段出现
-        record.custom_field = "should_appear"  # 这个应该出现
-        
-        # 发送日志
-        self.handler.emit(record)
-        
-        # 获取发送的数据
-        call_args = self.mock_client.put_logs.call_args[0][0]
-        log_item = call_args.logitems[0]
-        contents_dict = dict(log_item.contents)
-        
-        # 检查自定义字段出现
-        assert "extra_custom_field" in contents_dict
-        assert contents_dict["extra_custom_field"] == "should_appear"
-        
-        # 检查标准字段不会重复
-        extra_keys = [key for key in contents_dict.keys() if key.startswith("extra_")]
-        standard_field_names = ["name", "levelname", "module", "funcName", "lineno"]
-        
-        for field_name in standard_field_names:
-            assert f"extra_{field_name}" not in extra_keys
-
-    def test_message_formatting(self):
+    def test_message_formatting_with_args(self):
         """测试消息格式化功能"""
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
             pathname="test.py",
             lineno=10,
-            msg="Test message with %s and %d",
-            args=("string", 42),
+            msg="用户操作: user_id=%s, action=%s, status=%s",
+            args=("12345", "login", "success"),
             exc_info=None
         )
         
@@ -196,4 +82,90 @@ class TestSLSHandlerExcInfoAndExtra:
         contents_dict = dict(log_item.contents)
         
         # 验证消息被正确格式化
-        assert contents_dict["message"] == "Test message with string and 42" 
+        assert contents_dict["message"] == "用户操作: user_id=12345, action=login, status=success"
+
+    def test_exc_info_with_formatted_message(self):
+        """测试同时包含异常信息和格式化消息"""
+        try:
+            raise ValueError("Test exception")
+        except ValueError:
+            import sys
+            record = logging.LogRecord(
+                name="test",
+                level=logging.ERROR,
+                pathname="test.py",
+                lineno=10,
+                msg="操作失败: operation=%s, user=%s",
+                args=("payment", "user123"),
+                exc_info=sys.exc_info()
+            )
+            
+            # 发送日志
+            self.handler.emit(record)
+            
+            # 验证 put_logs 被调用
+            assert self.mock_client.put_logs.called
+            
+            # 获取发送的数据
+            call_args = self.mock_client.put_logs.call_args[0][0]
+            log_item = call_args.logitems[0]
+            
+            # 验证 contents 中包含异常信息和格式化消息
+            contents_dict = dict(log_item.contents)
+            
+            # 检查格式化后的消息
+            assert contents_dict["message"] == "操作失败: operation=payment, user=user123"
+            
+            # 检查异常信息
+            assert "exception" in contents_dict
+            assert "ValueError" in contents_dict["exception"]
+            assert "Test exception" in contents_dict["exception"]
+
+    def test_basic_message_without_formatting(self):
+        """测试不需要格式化的基本消息"""
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="test.py",
+            lineno=10,
+            msg="应用启动成功",
+            args=(),
+            exc_info=None
+        )
+        
+        # 发送日志
+        self.handler.emit(record)
+        
+        # 获取发送的数据
+        call_args = self.mock_client.put_logs.call_args[0][0]
+        log_item = call_args.logitems[0]
+        contents_dict = dict(log_item.contents)
+        
+        # 验证消息内容
+        assert contents_dict["message"] == "应用启动成功"
+        assert contents_dict["level"] == "INFO"
+        assert contents_dict["logger"] == "test"
+
+    def test_complex_formatting_with_mixed_types(self):
+        """测试包含多种数据类型的复杂格式化"""
+        record = logging.LogRecord(
+            name="test",
+            level=logging.WARNING,
+            pathname="test.py",
+            lineno=10,
+            msg="系统监控: cpu_usage=%.1f%%, memory_usage=%d%%, active_users=%s",
+            args=(85.7, 78, "1024"),
+            exc_info=None
+        )
+        
+        # 发送日志
+        self.handler.emit(record)
+        
+        # 获取发送的数据
+        call_args = self.mock_client.put_logs.call_args[0][0]
+        log_item = call_args.logitems[0]
+        contents_dict = dict(log_item.contents)
+        
+        # 验证复杂格式化的消息
+        expected_message = "系统监控: cpu_usage=85.7%, memory_usage=78%, active_users=1024"
+        assert contents_dict["message"] == expected_message 

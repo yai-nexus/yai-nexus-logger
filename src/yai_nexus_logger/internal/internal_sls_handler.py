@@ -58,6 +58,10 @@ class SLSLogHandler(logging.Handler):
         发送日志记录到 SLS，将 LogRecord 的关键字段作为独立的内容字段。
         """
         try:
+            # 直接从 trace_context 获取 trace_id
+            from ..trace_context import trace_context
+            current_trace_id = trace_context.get_trace_id() or ""
+            
             # 基础字段
             contents = [
                 ("message", record.getMessage()),  # 使用 getMessage() 获取格式化后的消息
@@ -68,7 +72,7 @@ class SLSLogHandler(logging.Handler):
                 ("line", str(record.lineno)),
                 ("process_id", str(record.process)),
                 ("thread_id", str(record.thread)),
-                ("trace_id", getattr(record, "trace_id", "")),
+                ("trace_id", current_trace_id),
             ]
 
             # 处理异常信息
