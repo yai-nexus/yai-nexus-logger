@@ -7,7 +7,10 @@ from unittest.mock import patch
 import pytest
 
 from yai_nexus_logger import get_logger
-from yai_nexus_logger.internal.internal_handlers import SLS_SDK_AVAILABLE
+from yai_nexus_logger.internal.internal_sls_handler import (
+    SLS_SDK_AVAILABLE,
+    _shutdown_sls_handler,
+)
 
 # 仅在安装了 SLS 依赖时运行此文件中的所有测试
 pytestmark = pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
@@ -79,8 +82,6 @@ def test_real_sls_logging_from_dotenv():
     try:
         logger.warning(test_message)
         # SlsHandler 是异步发送的，这里需要等待一下，确保日志有机会被发送出去
-        from yai_nexus_logger.internal.internal_handlers import _shutdown_sls_handler
-
         _shutdown_sls_handler()
 
     except Exception as e:

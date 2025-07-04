@@ -10,7 +10,7 @@ import pytest
 
 # 导入新的 get_logger 方法
 from yai_nexus_logger import get_logger, init_logging, trace_context
-from yai_nexus_logger.internal.internal_handlers import (
+from yai_nexus_logger.internal.internal_sls_handler import (
     _shutdown_sls_handler,  # 导入内部关闭函数
 )
 

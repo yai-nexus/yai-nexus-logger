@@ -1,17 +1,15 @@
 # src/yai_nexus_logger/logger_builder.py
 
 import logging
-import warnings
 from typing import List
 
 from .internal.internal_formatter import InternalFormatter
 from .internal.internal_handlers import (
-    SLS_SDK_AVAILABLE,
     get_console_handler,
     get_file_handler,
-    get_sls_handler,
 )
 from .internal.internal_settings import settings
+from .internal.internal_sls_handler import SLS_SDK_AVAILABLE, get_sls_handler
 from .uvicorn_support import configure_uvicorn_logging
 
 LOGGING_FORMAT = (
@@ -65,12 +63,11 @@ class LoggerConfigurator:
         source: str = None,
     ) -> "LoggerConfigurator":
         if not SLS_SDK_AVAILABLE:
-            warnings.warn(
+            raise ImportError(
                 "aliyun-log-python-sdk is not installed. "
-                "SLS handler won't be added. "
+                "SLS handler cannot be added. "
                 "Please run 'pip install yai-nexus-logger[sls]' to install it."
             )
-            return self
 
         sls_handler = get_sls_handler(
             formatter=self._formatter,

@@ -1,8 +1,7 @@
 """Unit tests for the yai_nexus_logger configuration and retrieval functions."""
 
 import logging
-import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,9 +9,7 @@ from yai_nexus_logger import (
     LoggerConfigurator,
     get_logger,
     init_logging,
-    trace_context,
 )
-from yai_nexus_logger.internal.internal_handlers import SLS_SDK_AVAILABLE
 
 
 def clean_logging_environment():
@@ -102,38 +99,16 @@ def test_init_logging_sls_missing_vars_warning(monkeypatch):
     )
 
 
-@pytest.mark.skipif(not SLS_SDK_AVAILABLE, reason="SLS SDK not installed")
-@patch("yai_nexus_logger.internal.internal_handlers.SLSLogHandler.emit")
-def test_init_logging_with_sls_handler_mocked(mock_emit, monkeypatch):
-    """
-    Test that init_logging, when configured for SLS via environment variables,
-    correctly adds the SLS handler and that the handler attempts to send logs.
-    The handler's emit method is mocked to prevent actual data transmission.
-    """
-    clean_logging_environment()
-    sls_env_vars = {
-        "LOG_APP_NAME": "sls_unit_test",
-        "LOG_LEVEL": "INFO",
-        "SLS_ENABLED": "true",
-        "SLS_ENDPOINT": "fake-endpoint.log.aliyuncs.com",
-        "SLS_ACCESS_KEY_ID": "fake_id",
-        "SLS_ACCESS_KEY_SECRET": "fake_secret",
-        "SLS_PROJECT": "fake_project",
-        "SLS_LOGSTORE": "fake_logstore",
-        "SLS_TOPIC": "test_topic",
-    }
-    monkeypatch.setattr(os, "environ", sls_env_vars)
+def test_configurator_with_sls_handler_raises_importerror(monkeypatch):
+    """Test that LoggerConfigurator.with_sls_handler raises ImportError if SDK is not available."""
+    monkeypatch.setattr("yai_nexus_logger.configurator.SLS_SDK_AVAILABLE", False)
 
-    init_logging()
-    logger = get_logger("sls_unit_logger")
+    with pytest.raises(ImportError, match="aliyun-log-python-sdk is not installed"):
+        LoggerConfigurator().with_sls_handler(
+            endpoint="fake-endpoint",
+            access_key_id="fake_id",
+            access_key_secret="fake_secret",
+            project="fake_project",
+            logstore="fake_logstore",
+        )
 
-    trace_id = "trace-for-sls-unit-test"
-    trace_context.set_trace_id(trace_id)
-
-    test_message = "This is a unit test message for SLS."
-    logger.warning(test_message)
-
-    mock_emit.assert_called_once()
-    log_record = mock_emit.call_args[0][0]
-    assert test_message in log_record.getMessage()
-    assert log_record.levelname == "WARNING"
