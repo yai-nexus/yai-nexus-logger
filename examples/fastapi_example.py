@@ -1,18 +1,13 @@
 """An example of using yai-nexus-logger with a FastAPI application."""
 
-import uuid
-from typing import Callable
-
 import uvicorn
-from fastapi import FastAPI, Request, Response
-from starlette.requests import Request
+from fastapi import FastAPI
 
 # 从我们的库中导入
 from yai_nexus_logger import (
     LoggerConfigurator,
     get_logger,
     init_logging,
-    trace_context,
 )
 
 
@@ -30,23 +25,6 @@ def create_app() -> FastAPI:
 
     logger = get_logger(__name__)
     app = FastAPI()
-
-    @app.middleware("http")
-    async def trace_id_middleware(request: Request, call_next: Callable) -> Response:
-        """
-        中间件：为每个请求注入一个唯一的 trace_id。
-        """
-        trace_id = request.headers.get("X-Trace-ID", str(uuid.uuid4()))
-        token = trace_context.set_trace_id(trace_id)
-        logger.info(f"Request started for trace_id: {trace_id}")
-
-        response = await call_next(request)
-
-        # 将 trace_id 添加到响应头中，以便客户端可以获取
-        response.headers["X-Trace-ID"] = trace_id
-
-        trace_context.reset_trace_id(token)
-        return response
 
     @app.get("/")
     def read_root():
