@@ -34,7 +34,7 @@ def simple_sls_logging():
     logger.error("这是一条错误消息")
 
     # 记录包含额外信息的日志
-    logger.info("用户登录", extra={"user_id": "12345", "action": "login"})
+    logger.info("用户登录: user_id=%s, action=%s", "12345", "login")
 
 
 def sls_with_trace_id():

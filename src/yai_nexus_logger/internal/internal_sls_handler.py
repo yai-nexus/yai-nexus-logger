@@ -58,8 +58,9 @@ class SLSLogHandler(logging.Handler):
         发送日志记录到 SLS，将 LogRecord 的关键字段作为独立的内容字段。
         """
         try:
+            # 基础字段
             contents = [
-                ("message", record.msg),
+                ("message", record.getMessage()),  # 使用 getMessage() 获取格式化后的消息
                 ("level", record.levelname),
                 ("logger", record.name),
                 ("module", record.module),
@@ -69,6 +70,19 @@ class SLSLogHandler(logging.Handler):
                 ("thread_id", str(record.thread)),
                 ("trace_id", getattr(record, "trace_id", "")),
             ]
+
+            # 处理异常信息
+            if record.exc_info and record.exc_info != True:
+                # 当 exc_info 是一个异常元组时，直接格式化
+                import traceback as tb
+                exc_text = ''.join(tb.format_exception(*record.exc_info))
+                contents.append(("exception", exc_text))
+            elif record.exc_info is True:
+                # 当 exc_info=True 时，使用当前异常信息
+                import traceback as tb
+                import sys
+                exc_text = ''.join(tb.format_exception(*sys.exc_info()))
+                contents.append(("exception", exc_text))
 
             log_item = LogItem(
                 timestamp=int(record.created),
