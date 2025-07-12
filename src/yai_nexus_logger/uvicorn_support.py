@@ -3,7 +3,12 @@
 import logging
 from typing import List
 
-from uvicorn.logging import AccessFormatter
+try:
+    from uvicorn.logging import AccessFormatter
+    UVICORN_AVAILABLE = True
+except ImportError:
+    UVICORN_AVAILABLE = False
+    AccessFormatter = None
 
 from yai_nexus_logger.trace_context import trace_context
 
@@ -45,6 +50,8 @@ def configure_uvicorn_logging(
         handlers (List[logging.Handler]): A list of logging handlers to attach.
         level (str): The logging level to set for the Uvicorn loggers.
     """
+    if not UVICORN_AVAILABLE:
+        return  # Silently skip if uvicorn is not available
     # 1. Detach existing handlers from Uvicorn loggers
     for name in ["uvicorn", "uvicorn.error", "uvicorn.access"]:
         log = logging.getLogger(name)
