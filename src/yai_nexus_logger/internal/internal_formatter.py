@@ -3,6 +3,7 @@
 import logging
 
 from yai_nexus_logger.trace_context import trace_context
+from .internal_utils import extract_extra_fields
 
 
 class InternalFormatter(logging.Formatter):
@@ -48,33 +49,10 @@ class InternalFormatter(logging.Formatter):
         formatted_message = super().format(record)
         
         # 检查是否有 extra 字段需要添加
-        extra_fields = self._extract_extra_fields(record)
+        extra_fields = extract_extra_fields(record)
         if extra_fields:
             extra_str = " | ".join([f"{k}={v}" for k, v in extra_fields.items()])
             formatted_message += f" | {extra_str}"
         
         return formatted_message
 
-    def _extract_extra_fields(self, record: logging.LogRecord) -> dict:
-        """
-        从 LogRecord 中提取 extra 字段。
-        排除标准的 logging 属性和我们自定义的属性。
-        """
-        # 标准 logging 属性
-        standard_attrs = {
-            'name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 'filename',
-            'module', 'lineno', 'funcName', 'created', 'msecs', 'relativeCreated',
-            'thread', 'threadName', 'processName', 'process', 'getMessage', 'exc_info',
-            'exc_text', 'stack_info', 'message', 'asctime', 'taskName'
-        }
-        
-        # 我们自定义的属性
-        custom_attrs = {'trace_id'}
-        
-        # 提取 extra 字段
-        extra_fields = {}
-        for key, value in record.__dict__.items():
-            if key not in standard_attrs and key not in custom_attrs:
-                extra_fields[key] = value
-        
-        return extra_fields

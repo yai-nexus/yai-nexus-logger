@@ -6,6 +6,7 @@ from io import StringIO
 
 from yai_nexus_logger import init_logging, get_logger
 from yai_nexus_logger.internal.internal_formatter import InternalFormatter
+from yai_nexus_logger.internal.internal_utils import extract_extra_fields
 
 
 class TestExtraParams:
@@ -88,9 +89,7 @@ class TestExtraParams:
         assert "用户操作" in formatted
 
     def test_extract_extra_fields_method(self):
-        """测试 _extract_extra_fields 方法的正确性"""
-        formatter = InternalFormatter()
-        
+        """测试 extract_extra_fields 方法的正确性"""
         # 创建包含各种字段的 LogRecord
         record = logging.LogRecord(
             name="test",
@@ -113,7 +112,7 @@ class TestExtraParams:
         record.custom_field = "custom_value"
         record.another_field = 42
         
-        extra_fields = formatter._extract_extra_fields(record)
+        extra_fields = extract_extra_fields(record)
         
         assert extra_fields == {
             "custom_field": "custom_value",
