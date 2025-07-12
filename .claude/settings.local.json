@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(python -m pytest tests/yai_nexus_logger/unit/test_extra_params.py -v)",
+      "Bash(source:*)",
+      "Bash(python test:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}
