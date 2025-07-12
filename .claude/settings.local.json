@@ -6,7 +6,8 @@
       "Bash(source:*)",
       "Bash(python test:*)",
       "Bash(rm:*)",
-      "Bash(python -m pytest tests/ -v)"
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/yai_nexus_logger/unit/test_trace_context.py -v)"
     ],
     "deny": []
   }

@@ -36,7 +36,7 @@ class InternalFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         # 注入 trace_id
-        record.trace_id = trace_context.get_trace_id() or "-"
+        record.trace_id = trace_context.get_trace_id() or "No-Trace-ID"
 
         # 缩写模块名
         record.module = self._abbreviate_module_name(record.module)

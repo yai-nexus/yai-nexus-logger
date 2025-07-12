@@ -17,7 +17,14 @@ class TraceContext:
     使用 `ContextVar[str]` 来简化实现，避免了手动管理堆栈。
     """
 
-    def get_trace_id(self) -> str:
+    def get_trace_id(self) -> Optional[str]:
+        """
+        获取当前的 trace_id。
+        如果上下文中没有 trace_id，返回 None。
+        """
+        return _trace_id_context.get()
+
+    def get_or_create_trace_id(self) -> str:
         """
         获取当前的 trace_id。
         如果上下文中没有 trace_id，会自动生成一个新的 UUIDv4 并设置为当前 trace_id。

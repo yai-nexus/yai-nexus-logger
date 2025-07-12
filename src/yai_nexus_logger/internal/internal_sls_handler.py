@@ -60,7 +60,7 @@ class SLSLogHandler(logging.Handler):
         try:
             # 直接从 trace_context 获取 trace_id
             from ..trace_context import trace_context
-            current_trace_id = trace_context.get_trace_id() or ""
+            current_trace_id = trace_context.get_trace_id() or "No-Trace-ID"
 
             # 基础字段
             contents = [
@@ -82,16 +82,11 @@ class SLSLogHandler(logging.Handler):
                 contents.append((key, str(value)))
 
             # 处理异常信息
-            if record.exc_info and not record.exc_info:
-                # 当 exc_info 是一个异常元组时，直接格式化
-                import traceback as tb
-                exc_text = ''.join(tb.format_exception(*record.exc_info))
-                contents.append(("exception", exc_text))
-            elif record.exc_info is True:
-                # 当 exc_info=True 时，使用当前异常信息
-                import sys
-                import traceback as tb
-                exc_text = ''.join(tb.format_exception(*sys.exc_info()))
+            if record.exc_info:
+                # 使用 Formatter.formatException 来可靠地处理异常信息
+                # 它能正确处理 (type, value, traceback) 元组和 sys.exc_info()
+                formatter = logging.Formatter()  # 创建一个基础格式化器用于处理异常
+                exc_text = formatter.formatException(record.exc_info)
                 contents.append(("exception", exc_text))
 
             log_item = LogItem(

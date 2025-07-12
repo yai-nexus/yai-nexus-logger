@@ -41,8 +41,9 @@ def create_app() -> FastAPI:
         trace_id = request.headers.get("X-Trace-ID", str(uuid.uuid4()))
         token = trace_context.set_trace_id(trace_id)
         logger.info(f"Request started for trace_id: {trace_id}")
+        # 验证 trace_id 是否正确设置
         trace_id_get = trace_context.get_trace_id()
-        logger.info(f"trace_id_get: {trace_id_get}")
+        logger.info(f"trace_id_get: {trace_id_get or 'None'}")
 
         response = await call_next(request)
 
