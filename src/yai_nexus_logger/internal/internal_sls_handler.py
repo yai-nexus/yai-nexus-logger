@@ -43,6 +43,10 @@ def get_sls_handler(
     )
     handler.setFormatter(formatter)
     
+    # 设置 source（日志来源），如果未提供则使用默认值
+    if source:
+        handler.source = source
+    
     return handler
 
 
