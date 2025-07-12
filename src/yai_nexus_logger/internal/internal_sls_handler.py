@@ -83,10 +83,14 @@ class SLSLogHandler(logging.Handler):
 
             # 处理异常信息
             if record.exc_info:
-                # 使用 Formatter.formatException 来可靠地处理异常信息
-                # 它能正确处理 (type, value, traceback) 元组和 sys.exc_info()
-                formatter = logging.Formatter()  # 创建一个基础格式化器用于处理异常
-                exc_text = formatter.formatException(record.exc_info)
+                # 直接使用 handler 自身的 formatter 来处理异常，无需创建新实例
+                # self.formatter 在 get_sls_handler 中已经被设置
+                if self.formatter:
+                    exc_text = self.formatter.formatException(record.exc_info)
+                else:
+                    # 如果没有设置 formatter（主要在测试中），使用基础格式化器
+                    formatter = logging.Formatter()
+                    exc_text = formatter.formatException(record.exc_info)
                 contents.append(("exception", exc_text))
 
             log_item = LogItem(
