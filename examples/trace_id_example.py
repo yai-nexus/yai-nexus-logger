@@ -65,7 +65,32 @@ def create_app() -> FastAPI:
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+
     # 在 __main__ 块中创建和运行 app
     app = create_app()
-    # 使用 uvicorn 运行应用
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+
+    # 检查是否是测试模式
+    if os.getenv("TEST_MODE") == "1" or "--test" in sys.argv:
+        # 测试模式：模拟请求处理
+        logger = get_logger(__name__)
+
+        # 模拟一个带 trace_id 的请求处理过程
+        import uuid
+        trace_id = str(uuid.uuid4())
+        token = trace_context.set_trace_id(trace_id)
+
+        try:
+            logger.info(f"模拟请求开始，trace_id: {trace_id}")
+            logger.info("这是一条来自根端点的信息消息")
+            logger.info("模拟中间件处理")
+            logger.info("请求处理完成")
+        finally:
+            trace_context.reset_trace_id(token)
+
+        print("✅ Trace ID 示例测试完成！")
+    else:
+        # 正常模式：启动服务器
+        # 使用 uvicorn 运行应用
+        uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -57,8 +57,24 @@ def create_app() -> FastAPI:
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+
     # 在 __main__ 块中创建和运行 app
     app = create_app()
-    # 使用 uvicorn 运行应用
-    # uvicorn 会自动使用我们在 setup_logging 中通过 LOG_UVICORN_INTEGRATION_ENABLED 配置的日志格式
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # 检查是否是测试模式（通过环境变量或命令行参数）
+    if os.getenv("TEST_MODE") == "1" or "--test" in sys.argv:
+        # 测试模式：只创建应用并记录一些测试日志
+        logger = get_logger(__name__)
+        logger.info("FastAPI 应用已创建，测试模式运行")
+        logger.info("模拟根路由调用")
+        logger.info("模拟物品路由调用")
+        logger.warning("模拟警告：访问了魔法物品！")
+        logger.error("模拟错误处理")
+        print("✅ FastAPI 示例测试完成！")
+    else:
+        # 正常模式：启动服务器
+        # 使用 uvicorn 运行应用
+        # uvicorn 会自动使用我们在 setup_logging 中通过 LOG_UVICORN_INTEGRATION_ENABLED 配置的日志格式
+        uvicorn.run(app, host="0.0.0.0", port=8000)
