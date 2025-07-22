@@ -41,37 +41,32 @@ def configure_uvicorn_logging(
     handlers: List[logging.Handler], level: str = "INFO"
 ) -> None:
     """
-    Reconfigures the Uvicorn loggers to use the application's handlers.
-    This ensures that Uvicorn's logs (access, error, and general) are
-    processed by the same handlers as the application logger, providing
-    a unified logging setup.
+    为 Uvicorn 的访问日志添加 trace_id 支持。
+    只处理控制台输出的访问日志，不强制重定向到文件或 SLS。
+    这样既保留了 trace_id 追踪的核心价值，又避免了复杂的 handler 兼容性问题。
 
     Args:
-        handlers (List[logging.Handler]): A list of logging handlers to attach.
-        level (str): The logging level to set for the Uvicorn loggers.
+        handlers (List[logging.Handler]): A list of logging handlers to check for console output.
+        level (str): The logging level to set for the Uvicorn access logger.
     """
     if not UVICORN_AVAILABLE:
         return  # Silently skip if uvicorn is not available
-    # 1. Detach existing handlers from Uvicorn loggers
-    for name in ["uvicorn", "uvicorn.error", "uvicorn.access"]:
-        log = logging.getLogger(name)
-        log.handlers.clear()
-        log.propagate = False  # Prevent logs from propagating to the root logger
 
-    # 2. Configure 'uvicorn.access' logger
+    # 只处理 uvicorn.access，为其添加 trace_id 支持
     uvicorn_access_logger = logging.getLogger("uvicorn.access")
-    # Replace the default formatter with our custom one
-    for handler in handlers:
-        # Create a copy of the handler to avoid side effects
+    uvicorn_access_logger.handlers.clear()
+    uvicorn_access_logger.propagate = False  # Prevent logs from propagating to the root logger
+
+    # 只为 StreamHandler 类型的 handler 添加 trace_id，避免复杂的 handler 兼容性问题
+    # 这包括 StreamHandler 和 FileHandler（FileHandler 继承自 StreamHandler）
+    # 但排除 QueuedLogHandler 等其他类型的 handler
+    stream_handlers = [h for h in handlers if isinstance(h, logging.StreamHandler)]
+    for handler in stream_handlers:
         handler_copy = logging.StreamHandler(handler.stream)
         handler_copy.setFormatter(UvicornAccessFormatter())
         uvicorn_access_logger.addHandler(handler_copy)
+
     uvicorn_access_logger.setLevel(level.upper())
 
-    # 3. Configure 'uvicorn' and 'uvicorn.error' loggers
-    # These will use the formatters already attached to the handlers
-    for name in ["uvicorn", "uvicorn.error"]:
-        log = logging.getLogger(name)
-        for handler in handlers:
-            log.addHandler(handler)
-        log.setLevel(level.upper())
+    # 不处理 uvicorn 和 uvicorn.error，让它们保持默认行为
+    # 这样可以避免日志混乱，并保持各自的职责分离

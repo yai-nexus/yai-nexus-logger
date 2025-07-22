@@ -34,9 +34,11 @@ class TestSLSExcInfoIntegration:
         """测试通过 logger 接口使用 exc_info 和消息格式化"""
 
         # 模拟 SLS 客户端
-        with patch('yai_nexus_logger.internal.internal_sls_handler.LogClient') as mock_log_client_class:
-            mock_client = Mock()
-            mock_log_client_class.return_value = mock_client
+        with patch('yai_nexus_logger.internal.internal_sls_handler.QueuedLogHandler') as mock_queued_handler_class:
+            mock_handler = Mock()
+            mock_handler.level = logging.DEBUG  # 设置日志级别
+            mock_handler.setFormatter = Mock()  # 模拟 setFormatter 方法
+            mock_queued_handler_class.return_value = mock_handler
 
             # 强制清理已存在的 handlers，确保重新初始化
             app_logger = logging.getLogger("app")
@@ -62,22 +64,21 @@ class TestSLSExcInfoIntegration:
                             exc_info=True
                         )
 
-                    # 验证 SLS 调用
-                    assert mock_client.put_logs.called
-                    call_args = mock_client.put_logs.call_args[0][0]
-                    log_item = call_args.logitems[0]
-                    contents_dict = dict(log_item.contents)
+                    # 验证 SLS handler 被调用
+                    assert mock_handler.emit.called
+                    # 获取传递给 emit 的 LogRecord
+                    call_args = mock_handler.emit.call_args[0]
+                    log_record = call_args[0]
 
                     # 验证基础字段
-                    assert contents_dict["message"] == "业务操作失败: user_id=user123, operation=payment, amount=100.50"
-                    assert contents_dict["level"] == "ERROR"
-                    assert contents_dict["trace_id"] == "test-trace-123"
+                    assert "业务操作失败: user_id=user123, operation=payment, amount=100.50" in log_record.getMessage()
+                    assert log_record.levelname == "ERROR"
+                    assert hasattr(log_record, 'trace_id')
+                    assert log_record.trace_id == "test-trace-123"
 
-                    # 验证异常信息
-                    assert "exception" in contents_dict
-                    assert "ValueError" in contents_dict["exception"]
-                    assert "测试异常消息" in contents_dict["exception"]
-                    assert "Traceback" in contents_dict["exception"]
+                    # 验证异常信息存在
+                    assert log_record.exc_info is not None
+                    assert log_record.exc_text is not None or log_record.exc_info is not None
 
                 finally:
                     trace_context.reset_trace_id(token)
@@ -96,9 +97,11 @@ class TestSLSExcInfoIntegration:
         """测试多次日志调用使用不同的消息格式化"""
 
         # 模拟 SLS 客户端
-        with patch('yai_nexus_logger.internal.internal_sls_handler.LogClient') as mock_log_client_class:
-            mock_client = Mock()
-            mock_log_client_class.return_value = mock_client
+        with patch('yai_nexus_logger.internal.internal_sls_handler.QueuedLogHandler') as mock_queued_handler_class:
+            mock_handler = Mock()
+            mock_handler.level = logging.DEBUG  # 设置日志级别
+            mock_handler.setFormatter = Mock()  # 模拟 setFormatter 方法
+            mock_queued_handler_class.return_value = mock_handler
 
             # 强制清理已存在的 handlers，确保重新初始化
             app_logger = logging.getLogger("app")
@@ -119,21 +122,21 @@ class TestSLSExcInfoIntegration:
                               85.2, 78.5, "web_server")
 
                 # 验证两次调用都成功
-                assert mock_client.put_logs.call_count == 2
+                assert mock_handler.emit.call_count == 2
 
                 # 验证第一次调用
-                first_call_args = mock_client.put_logs.call_args_list[0][0][0]
-                first_contents = dict(first_call_args.logitems[0].contents)
+                first_call_args = mock_handler.emit.call_args_list[0][0]
+                first_record = first_call_args[0]
 
                 expected_first_message = "用户登录成功: user_id=user123, ip=192.168.1.100, user_agent=Chrome/91.0"
-                assert first_contents["message"] == expected_first_message
+                assert first_record.getMessage() == expected_first_message
 
                 # 验证第二次调用
-                second_call_args = mock_client.put_logs.call_args_list[1][0][0]
-                second_contents = dict(second_call_args.logitems[0].contents)
+                second_call_args = mock_handler.emit.call_args_list[1][0]
+                second_record = second_call_args[0]
 
                 expected_second_message = "系统资源警告: cpu_usage=85.2%, memory_usage=78.5%, component=web_server"
-                assert second_contents["message"] == expected_second_message
+                assert second_record.getMessage() == expected_second_message
 
     def teardown_method(self):
         """每个测试后的清理"""

@@ -10,9 +10,7 @@ import pytest
 
 # 导入新的 get_logger 方法
 from yai_nexus_logger import get_logger, init_logging, trace_context
-from yai_nexus_logger.internal.internal_sls_handler import (
-    _shutdown_sls_handler,  # 导入内部关闭函数
-)
+
 
 # 创建一个临时的日志文件用于测试
 LOG_FILE = Path("tests/temp_integration_test.log")
@@ -28,7 +26,6 @@ def setup_and_teardown_log_file():
     yield
 
     # 清理所有 handler，确保文件句柄被释放
-    _shutdown_sls_handler()
     logging.shutdown()
 
     # 测试结束后删除日志文件

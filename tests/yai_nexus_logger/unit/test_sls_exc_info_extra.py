@@ -5,7 +5,7 @@
 import logging
 from unittest.mock import Mock, patch
 
-from yai_nexus_logger.internal.internal_sls_handler import SLSLogHandler
+from yai_nexus_logger.internal.internal_sls_handler import get_sls_handler
 
 
 class TestSLSHandlerExcInfoAndFormatting:
@@ -17,14 +17,20 @@ class TestSLSHandlerExcInfoAndFormatting:
         self.mock_client = Mock()
 
         # 创建 handler 但使用模拟的客户端
-        with patch('yai_nexus_logger.internal.internal_sls_handler.LogClient'):
-            self.handler = SLSLogHandler(
+        with patch('yai_nexus_logger.internal.internal_sls_handler.QueuedLogHandler') as mock_handler_class:
+            mock_handler_instance = Mock()
+            mock_handler_class.return_value = mock_handler_instance
+
+            self.handler = get_sls_handler(
+                formatter=logging.Formatter(),
+                app_name="test-app",
                 endpoint="test-endpoint",
                 access_key_id="test-key",
                 access_key_secret="test-secret",
                 project="test-project",
                 logstore="test-logstore"
             )
+            # 替换内部的客户端为我们的模拟对象
             self.handler.client = self.mock_client
 
     def test_exc_info_is_included(self):
