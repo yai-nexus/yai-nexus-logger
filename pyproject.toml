@@ -1,6 +1,6 @@
 [project]
 name = "yai-nexus-logger"
-version = "0.4.0"
+version = "0.4.1"
 authors = [
   { name="Harry", email="harrytang.next@gmail.com" },
 ]

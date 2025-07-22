@@ -6,7 +6,7 @@ YAI Nexus Logger.
 一个为现代 Python 应用设计的、功能强大且易于使用的日志记录工具。
 """
 
-__version__ = "0.2.0"
+__version__ = "0.4.1"
 
 # 从 .configurator 模块导入 LoggerConfigurator 类
 from .configurator import LoggerConfigurator
